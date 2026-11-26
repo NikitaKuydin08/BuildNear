@@ -7,7 +7,7 @@ import { after } from "next/server";
 import { getDb } from "@/db";
 import { events, introRequests } from "@/db/schema";
 import { recordConnection } from "@/lib/brain";
-import { getIntro, getUser, shareEvent } from "@/lib/queries";
+import { canConnect, getIntro, getUser } from "@/lib/queries";
 import { requireUserId } from "@/lib/session";
 
 const MAX_MESSAGE = 200;
@@ -19,7 +19,7 @@ function safeBack(v: unknown) {
 }
 
 // Send an intro request. Server-side rules (the UI is not trusted):
-// - not to yourself, - only to someone who joined an event you joined,
+// - not to yourself, - only to someone who joined an event you joined, or who is nearby right now,
 // - one request per pair; if they already asked you, this accepts theirs.
 export async function sendIntro(formData: FormData) {
   const me = await requireUserId();
@@ -28,8 +28,8 @@ export async function sendIntro(formData: FormData) {
   const message = String(formData.get("message") ?? "").trim().slice(0, MAX_MESSAGE);
 
   if (!to || to === me) redirect(back);
-  const eventId = await shareEvent(me, to);
-  if (!eventId) redirect(back);
+  const { allowed, eventId } = await canConnect(me, to);
+  if (!allowed) redirect(back);
 
   const db = getDb();
   const [reverse] = await db

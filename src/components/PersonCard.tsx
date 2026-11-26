@@ -15,6 +15,8 @@ export type PersonCardProps = {
   why?: string;
   action?: "meet" | "chat";
   brainMatch?: number;
+  project?: { title: string; description: string; url: string | null } | null;
+  distance?: string;
   children?: React.ReactNode;
 };
 
@@ -28,7 +30,10 @@ export function PersonCard(p: PersonCardProps) {
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate font-medium">{p.name}</p>
-          <p className="text-xs text-neutral-500">{MEET_LABEL[p.meetPreference]}</p>
+          <p className="text-xs text-neutral-500">
+            {MEET_LABEL[p.meetPreference]}
+            {p.distance ? ` · ${p.distance}` : ""}
+          </p>
         </div>
         {p.brainMatch !== undefined && (
           <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900 dark:bg-amber-900/40 dark:text-amber-200">
@@ -53,6 +58,19 @@ export function PersonCard(p: PersonCardProps) {
       )}
       {p.topics.length > 0 && (
         <p className="mt-2 text-xs text-neutral-500">Into: {p.topics.slice(0, 4).join(", ")}</p>
+      )}
+
+      {p.project && (
+        <div className="mt-3 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
+          <p className="text-xs uppercase tracking-wide text-neutral-500">Proudest project</p>
+          <p className="text-sm font-medium">{p.project.title}</p>
+          {p.project.description && <p className="text-sm text-neutral-500">{p.project.description}</p>}
+          {p.project.url && (
+            <a href={p.project.url} target="_blank" rel="noreferrer" className="text-xs underline">
+              Open link
+            </a>
+          )}
+        </div>
       )}
 
       {p.why && (

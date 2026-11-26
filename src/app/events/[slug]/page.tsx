@@ -6,9 +6,10 @@ import { PersonCard } from "@/components/PersonCard";
 import { scorePair, type MeetPreference, type Person, type WorkStatus } from "@/lib/match";
 import { badgeConfigured, txUrl } from "@/lib/chain";
 import { brainEnabled, brainPicks } from "@/lib/brain";
-import { getAttendance, getBadge, getEventBySlug, getUser, introStatesFor, listAttendees } from "@/lib/queries";
+import { featuredFor, getAttendance, getBadge, getEventBySlug, getUser, introStatesFor, listAttendees } from "@/lib/queries";
+import { isHere } from "@/lib/presence";
 import { requireUserId } from "@/lib/session";
-import { checkIn, claimBadge, joinEvent } from "../actions";
+import { checkIn, claimBadge, joinEvent, leaveEvent } from "../actions";
 
 type Props = PageProps<"/events/[slug]">;
 type Tab = "everyone" | "for-you" | "brain";
@@ -49,6 +50,8 @@ async function EventView({ params, searchParams }: { params: Props["params"]; se
   if (!event) notFound();
 
   const attendance = await getAttendance(meId, event.id);
+  // Checked in and not marked as left since.
+  const atVenue = !!attendance?.checkedInAt && !(attendance.leftAt && attendance.leftAt >= attendance.checkedInAt);
   const [badge, me] = await Promise.all([getBadge(meId, event.id), getUser(meId)]);
 
   return (
@@ -70,7 +73,7 @@ async function EventView({ params, searchParams }: { params: Props["params"]; se
         </form>
       )}
 
-      {attendance && !attendance.checkedInAt && (
+      {attendance && !atVenue && (
         <form action={checkIn} className="flex flex-col gap-2 rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
           <p className="text-sm font-medium">At the venue? Enter the event code to check in.</p>
           <input type="hidden" name="slug" value={slug} />
@@ -89,10 +92,14 @@ async function EventView({ params, searchParams }: { params: Props["params"]; se
         </form>
       )}
 
-      {attendance?.checkedInAt && (
-        <p className="rounded-2xl bg-green-100 p-3 text-sm font-medium text-green-800 dark:bg-green-900/40 dark:text-green-300">
-          You're checked in. Others at the event can see you're here.
-        </p>
+      {atVenue && (
+        <form action={leaveEvent} className="flex items-center justify-between gap-3 rounded-2xl bg-green-100 p-3 dark:bg-green-900/40">
+          <input type="hidden" name="slug" value={slug} />
+          <p className="text-sm font-medium text-green-800 dark:text-green-300">You're checked in. Others can see you're here.</p>
+          <button className="min-h-11 shrink-0 rounded-full border border-green-800/30 px-4 text-sm font-medium text-green-800 dark:text-green-300" type="submit">
+            I left
+          </button>
+        </form>
       )}
 
       {attendance?.checkedInAt && badgeConfigured() && (
@@ -150,7 +157,7 @@ async function EventView({ params, searchParams }: { params: Props["params"]; se
           </div>
 
           <Suspense fallback={<p className="text-neutral-400">Loading people…</p>}>
-            <Feed eventId={event.id} slug={slug} meId={meId} tab={tab} />
+            <Feed eventId={event.id} endsAt={event.endsAt} slug={slug} meId={meId} tab={tab} />
           </Suspense>
         </>
       )}
@@ -158,10 +165,11 @@ async function EventView({ params, searchParams }: { params: Props["params"]; se
   );
 }
 
-async function Feed({ eventId, slug, meId, tab }: { eventId: string; slug: string; meId: string; tab: Tab }) {
+async function Feed({ eventId, endsAt, slug, meId, tab }: { eventId: string; endsAt: Date; slug: string; meId: string; tab: Tab }) {
   const [me, rows] = await Promise.all([getUser(meId), listAttendees(eventId, meId)]);
   if (rows.length === 0) return <p className="text-neutral-500">No one else has joined yet.</p>;
-  const states = await introStatesFor(meId, rows.map((r) => r.user.id));
+  const ids = rows.map((r) => r.user.id);
+  const [states, projectsBy] = await Promise.all([introStatesFor(meId, ids), featuredFor(ids)]);
   const back = `/events/${slug}${tab === "everyone" ? "" : `?tab=${tab}`}`;
 
   if (tab === "brain" && me) {
@@ -184,14 +192,15 @@ async function Feed({ eventId, slug, meId, tab }: { eventId: string; slug: strin
     }
     return (
       <ul className="flex flex-col gap-3">
-        {known.map(({ user, checkedInAt }) => (
+        {known.map(({ user, checkedInAt, leftAt }) => (
           <PersonCard
             key={user.id}
             name={user.name}
             stack={user.stack}
             topics={user.topics}
             meetPreference={user.meetPreference as MeetPreference}
-            hereNow={!!checkedInAt}
+            hereNow={isHere(checkedInAt, leftAt, endsAt)}
+            project={projectsBy.get(user.id)}
             why={picks.get(user.id)!.why}
             brainMatch={picks.get(user.id)!.similarity}
           >
@@ -209,14 +218,15 @@ async function Feed({ eventId, slug, meId, tab }: { eventId: string; slug: strin
       .sort((a, b) => b.match.score - a.match.score);
     return (
       <ul className="flex flex-col gap-3">
-        {ranked.map(({ user, checkedInAt, match }) => (
+        {ranked.map(({ user, checkedInAt, leftAt, match }) => (
           <PersonCard
             key={user.id}
             name={user.name}
             stack={user.stack}
             topics={user.topics}
             meetPreference={user.meetPreference as MeetPreference}
-            hereNow={!!checkedInAt}
+            hereNow={isHere(checkedInAt, leftAt, endsAt)}
+            project={projectsBy.get(user.id)}
             why={match.why}
             action={match.action}
           >
@@ -229,14 +239,15 @@ async function Feed({ eventId, slug, meId, tab }: { eventId: string; slug: strin
 
   return (
     <ul className="flex flex-col gap-3">
-      {rows.map(({ user, checkedInAt }) => (
+      {rows.map(({ user, checkedInAt, leftAt }) => (
         <PersonCard
           key={user.id}
           name={user.name}
           stack={user.stack}
           topics={user.topics}
           meetPreference={user.meetPreference as MeetPreference}
-          hereNow={!!checkedInAt}
+          hereNow={isHere(checkedInAt, leftAt, endsAt)}
+            project={projectsBy.get(user.id)}
         >
           <IntroControl toUserId={user.id} back={back} state={states.get(user.id)} />
         </PersonCard>

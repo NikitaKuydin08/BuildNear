@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, primaryKey, unique } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, primaryKey, unique, doublePrecision, boolean } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 // Structured data lives here. The Living Brain stores judgments and reasons, not these rows.
@@ -17,6 +17,16 @@ export const users = pgTable("users", {
   workStatus: text("work_status"),
   // Optional: where the attendance badge is minted. Never shown to other users.
   walletAddress: text("wallet_address"),
+  // Contacts the user chooses to share. Revealed only to someone whose intro request is accepted.
+  telegram: text("telegram"),
+  whatsapp: text("whatsapp"),
+  linkedin: text("linkedin"),
+  contactEmail: text("contact_email"),
+  // Opt-in, coarse (rounded to ~1 km), latest position only. Ignored after 4 hours without a refresh.
+  shareLocation: boolean("share_location").notNull().default(false),
+  locationLat: doublePrecision("location_lat"),
+  locationLon: doublePrecision("location_lon"),
+  locationAt: timestamp("location_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -41,6 +51,8 @@ export const attendances = pgTable(
     eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
     joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow(),
     checkedInAt: timestamp("checked_in_at", { withTimezone: true }),
+    // Set when the person taps "I left". Hides "here now" without erasing proof of attendance (the badge needs checkedInAt).
+    leftAt: timestamp("left_at", { withTimezone: true }),
   },
   (t) => [primaryKey({ columns: [t.userId, t.eventId] })],
 );
@@ -74,3 +86,15 @@ export const badges = pgTable(
   },
   (t) => [primaryKey({ columns: [t.userId, t.eventId] })],
 );
+
+// Up to 3 per user; one is "featured" (the project they are proudest of) and shown on their card.
+export const projects = pgTable("projects", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  stack: text("stack").array().notNull().default(sql`'{}'::text[]`),
+  url: text("url"),
+  featured: boolean("featured").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

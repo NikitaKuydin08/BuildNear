@@ -3,19 +3,26 @@ import { listInbox } from "@/lib/queries";
 import { requireUserId } from "@/lib/session";
 import { respondIntro } from "./actions";
 
-type Row = { id: string; status: string; message: string; name: string; stack: string[]; githubLogin: string | null };
+type Contact = { login: string; links: { label: string; text: string; href: string }[] };
+type Row = { id: string; status: string; message: string; name: string; stack: string[]; contact: Contact | null };
 
-function Reveal({ login }: { login: string | null }) {
-  if (!login) return null;
+function Reveal({ contact }: { contact: Contact | null }) {
+  if (!contact) return null;
+  const btn =
+    "flex min-h-11 items-center justify-between gap-3 rounded-xl border border-neutral-200 px-4 text-sm dark:border-neutral-800";
   return (
-    <a
-      href={`https://github.com/${login}`}
-      target="_blank"
-      rel="noreferrer"
-      className="mt-3 flex min-h-11 items-center justify-center rounded-full bg-black px-4 text-sm font-medium text-white dark:bg-white dark:text-black"
-    >
-      Connected: open github.com/{login}
-    </a>
+    <div className="mt-3 flex flex-col gap-2">
+      <a href={`https://github.com/${contact.login}`} target="_blank" rel="noreferrer" className={btn}>
+        <span className="font-medium">GitHub</span>
+        <span className="truncate text-neutral-500">github.com/{contact.login}</span>
+      </a>
+      {contact.links.map((l) => (
+        <a key={l.label} href={l.href} target="_blank" rel="noreferrer" className={btn}>
+          <span className="font-medium">{l.label}</span>
+          <span className="truncate text-neutral-500">{l.text}</span>
+        </a>
+      ))}
+    </div>
   );
 }
 
@@ -66,7 +73,7 @@ async function InboxView() {
         <ul className="flex flex-col gap-3">
           {connected.map((r) => (
             <Card key={r.id} row={r}>
-              <Reveal login={r.githubLogin} />
+              <Reveal contact={r.contact} />
             </Card>
           ))}
         </ul>

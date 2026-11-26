@@ -9,7 +9,7 @@ import { attendances, badges, users } from "@/db/schema";
 import { isMinterAddress, isWallet, mintBadge } from "@/lib/chain";
 import { verifyToken } from "@/lib/qr-token";
 import { syncProfile } from "@/lib/brain";
-import { getBadge, getEventBySlug, getUser } from "@/lib/queries";
+import { getBadge, getBrainUser, getEventBySlug } from "@/lib/queries";
 import { requireUserId } from "@/lib/session";
 
 export async function joinEvent(formData: FormData) {
@@ -21,7 +21,7 @@ export async function joinEvent(formData: FormData) {
   await getDb().insert(attendances).values({ userId, eventId: event.id }).onConflictDoNothing();
   // Make sure the Brain knows this person before others look for matches (deduplicated by profile hash).
   after(async () => {
-    const u = await getUser(userId);
+    const u = await getBrainUser(userId);
     if (u) await syncProfile(u);
   });
   revalidatePath(`/events/${slug}`);
@@ -49,9 +49,23 @@ export async function checkIn(formData: FormData) {
   await db.insert(attendances).values({ userId, eventId: event.id }).onConflictDoNothing();
   await db
     .update(attendances)
-    .set({ checkedInAt: new Date() })
+    .set({ checkedInAt: new Date(), leftAt: null })
     .where(and(eq(attendances.userId, userId), eq(attendances.eventId, event.id)));
 
+  revalidatePath(`/events/${slug}`);
+  redirect(`/events/${slug}`);
+}
+
+// "I left": stop showing as here now. Your check-in (and so your badge right) stays.
+export async function leaveEvent(formData: FormData) {
+  const userId = await requireUserId();
+  const slug = String(formData.get("slug") ?? "");
+  const event = await getEventBySlug(slug);
+  if (!event) redirect("/events");
+  await getDb()
+    .update(attendances)
+    .set({ leftAt: new Date() })
+    .where(and(eq(attendances.userId, userId), eq(attendances.eventId, event.id)));
   revalidatePath(`/events/${slug}`);
   redirect(`/events/${slug}`);
 }

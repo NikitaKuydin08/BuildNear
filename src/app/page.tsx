@@ -43,6 +43,9 @@ export default function Home(props: PageProps<"/">) {
       <Link href="/admin/events" className="text-sm text-neutral-500 underline">
         Staff
       </Link>
+      <p className="max-w-xs text-xs text-neutral-500">
+        By signing in you agree to the <a href="/privacy" className="underline">privacy notice</a>: what we collect, why, and how to delete it.
+      </p>
     </main>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
+import Link from "next/link";
 import { BottomNav } from "@/components/BottomNav";
 import "./globals.css";
 
@@ -37,6 +38,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <div className="mx-auto w-full max-w-md flex-1 pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
           {children}
+          <footer className="px-4 pb-6 pt-2 text-center text-xs text-neutral-500">
+            <Link href="/privacy" className="underline">Privacy &amp; data</Link>
+          </footer>
         </div>
         <Suspense fallback={null}>
           <BottomNav />

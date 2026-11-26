@@ -15,6 +15,7 @@ export type BrainUser = {
   tags: string[];
   meetPreference: string;
   workStatus: string | null;
+  project?: { title: string; description: string } | null;
 };
 
 export function brainEnabled() {
@@ -48,6 +49,7 @@ export function profileNote(u: BrainUser) {
     `Works with: ${u.stack.join(", ") || "not specified"}`,
     `Interested in: ${u.topics.join(", ") || "not specified"}`,
     u.tags.length ? `Tags: ${u.tags.join(", ")}` : null,
+    u.project ? `Proudest project: ${u.project.title}${u.project.description ? ` - ${u.project.description}` : ""}` : null,
     `Meeting style: ${MEET[u.meetPreference] ?? u.meetPreference}`,
     u.workStatus ? `Work: ${WORK[u.workStatus] ?? u.workStatus}` : null,
   ]

@@ -18,7 +18,8 @@ async function CheckInView({ params, searchParams }: { params: PageProps<"/event
   if (!event) notFound();
   const attendance = await getAttendance(meId, event.id);
 
-  if (attendance?.checkedInAt) {
+  const stillHere = !!attendance?.checkedInAt && !(attendance.leftAt && attendance.leftAt >= attendance.checkedInAt);
+  if (stillHere) {
     return (
       <>
         <p className="rounded-2xl bg-green-100 p-3 text-sm font-medium text-green-800 dark:bg-green-900/40 dark:text-green-300">

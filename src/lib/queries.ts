@@ -1,6 +1,8 @@
 import { and, asc, desc, eq, inArray, ne, or, sql } from "drizzle-orm";
 import { getDb } from "@/db";
-import { attendances, badges, events, introRequests, users } from "@/db/schema";
+import { attendances, badges, events, introRequests, projects, users } from "@/db/schema";
+import { contactLinks } from "@/lib/contacts";
+import { distanceKm, isFresh, NEARBY_KM } from "@/lib/presence";
 
 export async function getEventBySlug(slug: string) {
   const [row] = await getDb().select().from(events).where(eq(events.slug, slug)).limit(1);
@@ -32,7 +34,7 @@ export async function listEventsFor(userId: string) {
 // Everyone who joined the event (except me), people who are checked in first.
 export async function listAttendees(eventId: string, meId: string) {
   return getDb()
-    .select({ user: users, checkedInAt: attendances.checkedInAt })
+    .select({ user: users, checkedInAt: attendances.checkedInAt, leftAt: attendances.leftAt })
     .from(attendances)
     .innerJoin(users, eq(attendances.userId, users.id))
     .where(and(eq(attendances.eventId, eventId), ne(attendances.userId, meId)))
@@ -93,7 +95,9 @@ export async function listInbox(meId: string) {
     .innerJoin(users, eq(introRequests.toUserId, users.id))
     .where(eq(introRequests.fromUserId, meId))
     .orderBy(desc(introRequests.createdAt));
-  const reveal = (accepted: boolean, login: string) => (accepted ? login : null);
+  // The reveal: GitHub link and contacts are included only when the request was accepted.
+  const reveal = (accepted: boolean, u: typeof users.$inferSelect) =>
+    accepted ? { login: u.githubLogin, links: contactLinks(u) } : null;
   return {
     incoming: rows.map((r) => ({
       id: r.req.id,
@@ -101,7 +105,7 @@ export async function listInbox(meId: string) {
       message: r.req.message,
       name: r.from.name,
       stack: r.from.stack,
-      githubLogin: reveal(r.req.status === "accepted", r.from.githubLogin),
+      contact: reveal(r.req.status === "accepted", r.from),
     })),
     outgoing: out.map((r) => ({
       id: r.req.id,
@@ -109,7 +113,7 @@ export async function listInbox(meId: string) {
       message: r.req.message,
       name: r.to.name,
       stack: r.to.stack,
-      githubLogin: reveal(r.req.status === "accepted", r.to.githubLogin),
+      contact: reveal(r.req.status === "accepted", r.to),
     })),
   };
 }
@@ -130,4 +134,59 @@ export async function listBadges(userId: string) {
     .innerJoin(events, eq(badges.eventId, events.id))
     .where(eq(badges.userId, userId))
     .orderBy(desc(badges.createdAt));
+}
+
+// ---- Projects ----
+export async function listProjects(userId: string) {
+  return getDb().select().from(projects).where(eq(projects.userId, userId)).orderBy(desc(projects.featured), asc(projects.createdAt));
+}
+
+export type FeaturedProject = { title: string; description: string; url: string | null };
+
+// The "proudest project" for a set of people, shown on their cards.
+export async function featuredFor(userIds: string[]) {
+  const out = new Map<string, FeaturedProject>();
+  if (userIds.length === 0) return out;
+  const rows = await getDb()
+    .select()
+    .from(projects)
+    .where(and(inArray(projects.userId, userIds), eq(projects.featured, true)));
+  for (const r of rows) out.set(r.userId, { title: r.title, description: r.description, url: r.url });
+  return out;
+}
+
+// User + featured project, in the shape the Brain note needs.
+export async function getBrainUser(userId: string) {
+  const u = await getUser(userId);
+  if (!u) return null;
+  const f = (await featuredFor([userId])).get(userId) ?? null;
+  return { ...u, project: f ? { title: f.title, description: f.description } : null };
+}
+
+// ---- Nearby ----
+// Opted-in people with a fresh position within NEARBY_KM of me, closest first. Coordinates never leave the server.
+export async function nearbyPeople(me: { id: string; locationLat: number | null; locationLon: number | null }) {
+  if (me.locationLat === null || me.locationLon === null) return [];
+  const rows = await getDb()
+    .select()
+    .from(users)
+    .where(and(ne(users.id, me.id), eq(users.shareLocation, true)));
+  return rows
+    .filter((u) => u.locationLat !== null && u.locationLon !== null && isFresh(u.locationAt))
+    .map((u) => ({ user: u, km: distanceKm(me.locationLat!, me.locationLon!, u.locationLat!, u.locationLon!) }))
+    .filter((x) => x.km <= NEARBY_KM)
+    .sort((a, b) => a.km - b.km);
+}
+
+// Intro requests are allowed between people who share an event, or who are both nearby right now.
+export async function canConnect(meId: string, otherId: string) {
+  const eventId = await shareEvent(meId, otherId);
+  if (eventId) return { allowed: true, eventId };
+  const [a, b] = await Promise.all([getUser(meId), getUser(otherId)]);
+  if (!a || !b) return { allowed: false, eventId: null };
+  const bothFresh =
+    a.shareLocation && b.shareLocation && isFresh(a.locationAt) && isFresh(b.locationAt) &&
+    a.locationLat !== null && a.locationLon !== null && b.locationLat !== null && b.locationLon !== null;
+  const near = bothFresh && distanceKm(a.locationLat!, a.locationLon!, b.locationLat!, b.locationLon!) <= NEARBY_KM;
+  return { allowed: !!near, eventId: null };
 }
