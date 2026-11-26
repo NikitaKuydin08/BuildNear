@@ -16,10 +16,8 @@ export function ThemeToggle() {
 
   return (
     <button type="button" role="switch" aria-checked={dark} aria-label="Dark mode" onClick={flip}
-      className="relative flex h-8 w-14 items-center rounded-full bg-white/15 px-1 text-xs">
-      <span aria-hidden className="absolute left-1.5 text-[13px]">☀</span>
-      <span aria-hidden className="absolute right-1.5 text-[13px]">☾</span>
-      <span aria-hidden className="relative z-10 h-6 w-6 rounded-full bg-accent shadow transition-transform duration-200 dark:translate-x-6 dark:bg-accent2" />
+      className="relative flex h-8 w-14 items-center rounded-full bg-line px-1">
+      <span aria-hidden className="h-6 w-6 rounded-full bg-card shadow transition-transform duration-200 dark:translate-x-6 dark:bg-purple" />
     </button>
   );
 }

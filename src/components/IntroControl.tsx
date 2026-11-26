@@ -1,35 +1,39 @@
+import Link from "next/link";
 import { sendIntro } from "@/app/inbox/actions";
+import { Icon, btnPrimary } from "@/components/ui";
 import type { IntroState } from "@/lib/queries";
 
-// The only action on a card. Contacts stay hidden until the other person accepts.
+// The "Let's connect" button (Figma 05) in every state of an introduction. Contacts stay hidden until it is accepted.
+// `back` is where the intro screens return to (the feed or the profile the person came from).
 export function IntroControl({ toUserId, back, state }: { toUserId: string; back: string; state?: IntroState }) {
   if (state?.status === "accepted") {
-    return <p className="mt-3 text-sm font-medium text-green-700 dark:text-green-400">Connected. Open your Inbox for the link.</p>;
+    return (
+      <Link href={`/inbox/${state.id}`} className={btnPrimary}>
+        <Icon name="chat" size={20} /> Open chat
+      </Link>
+    );
   }
   if (state?.status === "declined") {
-    return <p className="mt-3 text-xs text-neutral-500">Intro closed.</p>;
+    return <button disabled className={btnPrimary}>Intro closed</button>;
   }
   if (state?.direction === "sent") {
-    return <p className="mt-3 text-sm text-neutral-500">Request sent. Waiting for an answer.</p>;
+    return <button disabled className={btnPrimary}>Introduction sent</button>;
   }
-  const incoming = state?.direction === "received";
+  if (state?.direction === "received") {
+    // They said hello first: one tap accepts it.
+    return (
+      <form action={sendIntro} className="w-full">
+        <input type="hidden" name="toUserId" value={toUserId} />
+        <input type="hidden" name="back" value={`/inbox`} />
+        <button className={btnPrimary} type="submit">
+          <Icon name="check" size={20} /> Accept their hello
+        </button>
+      </form>
+    );
+  }
   return (
-    <form action={sendIntro} className="mt-3 flex flex-col gap-2">
-      <input type="hidden" name="toUserId" value={toUserId} />
-      <input type="hidden" name="back" value={back} />
-      {incoming ? (
-        <p className="text-sm text-neutral-500">They asked to connect with you. Tap to accept.</p>
-      ) : (
-        <input
-          name="message"
-          maxLength={200}
-          placeholder="Say hi (optional)"
-          className="min-h-11 rounded-xl border border-neutral-300 bg-transparent px-3 text-sm dark:border-neutral-700"
-        />
-      )}
-      <button className="min-h-11 rounded-full bg-accent px-4 text-sm font-medium text-black" type="submit">
-        {incoming ? "Accept intro" : "Request intro"}
-      </button>
-    </form>
+    <Link href={`/people/${toUserId}/intro?back=${encodeURIComponent(back)}`} className={btnPrimary}>
+      <Icon name="plus" size={20} /> Let’s connect
+    </Link>
   );
 }

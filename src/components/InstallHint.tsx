@@ -46,24 +46,24 @@ export function InstallHint() {
   if (hidden || (!prompt && !ios)) return null;
 
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-neutral-200 p-3 text-sm dark:border-neutral-800">
+    <div className="flex items-center gap-3 rounded-[18px] bg-card p-3 text-sm">
       <div className="flex-1">
         <p className="font-medium">Add BuildNear to your home screen</p>
         {ios ? (
-          <p className="text-xs text-neutral-500">Tap the Share button in Safari, then “Add to Home Screen”.</p>
+          <p className="text-xs text-muted">Tap the Share button in Safari, then “Add to Home Screen”.</p>
         ) : (
-          <p className="text-xs text-neutral-500">Opens like an app, full screen.</p>
+          <p className="text-xs text-muted">Opens like an app, full screen.</p>
         )}
       </div>
       {prompt && (
         <button
           onClick={async () => { await prompt.prompt(); dismiss(); }}
-          className="min-h-11 rounded-full bg-accent px-4 text-sm font-medium text-black"
+          className="min-h-11 rounded-[14px] bg-yellow px-4 text-sm font-semibold text-[#202127]"
         >
           Install
         </button>
       )}
-      <button onClick={dismiss} aria-label="Dismiss" className="min-h-11 px-2 text-neutral-500">✕</button>
+      <button onClick={dismiss} aria-label="Dismiss" className="min-h-11 px-2 text-muted">✕</button>
     </div>
   );
 }

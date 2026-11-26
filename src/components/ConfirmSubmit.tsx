@@ -15,10 +15,10 @@ export function ConfirmSubmit({ message, className, children }: { message: strin
   }
   return (
     <span className="flex flex-col items-end gap-2">
-      <span className="text-xs text-neutral-500">{message}</span>
+      <span className="text-xs text-muted">{message}</span>
       <span className="flex gap-2">
-        <button type="submit" className="min-h-11 rounded-full bg-red-600 px-4 text-sm font-medium text-white">Yes, remove</button>
-        <button type="button" onClick={() => setAsking(false)} className="min-h-11 rounded-full border border-neutral-300 px-4 text-sm font-medium dark:border-neutral-700">Cancel</button>
+        <button type="submit" className="min-h-11 rounded-[14px] bg-red-600 px-4 text-sm font-medium text-white">Yes, remove</button>
+        <button type="button" onClick={() => setAsking(false)} className="min-h-11 rounded-[14px] border border-line bg-card px-4 text-sm font-medium">Cancel</button>
       </span>
     </span>
   );

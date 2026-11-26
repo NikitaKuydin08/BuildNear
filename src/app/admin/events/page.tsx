@@ -8,7 +8,7 @@ import { requireAdmin } from "@/lib/organizer";
 import { EventTimes } from "@/components/DateTimeField";
 import { createEvent, setEventCoords, setEventField } from "./actions";
 
-const input = "min-h-12 w-full rounded-xl border border-neutral-300 bg-transparent px-4 dark:border-neutral-700";
+const input = "min-h-12 w-full rounded-[12px] border border-line bg-card px-4";
 const fmt = (d: Date) => d.toLocaleString("en-GB", { timeZone: "Asia/Bangkok", dateStyle: "medium", timeStyle: "short" });
 
 async function AdminView({ searchParams }: { searchParams: PageProps<"/admin/events">["searchParams"] }) {
@@ -38,31 +38,31 @@ async function AdminView({ searchParams }: { searchParams: PageProps<"/admin/eve
         {sp.error === "coords" ? <p className="text-sm text-red-600">That does not look like coordinates. Use the form 13.7563, 100.5018.</p> : sp.error && <p className="text-sm text-red-600">Check the fields. The end must be after the start.</p>}
         {sp.updated && <p className="text-sm text-green-700 dark:text-green-400">Badge field updated.</p>}
         {sp.created && <p className="text-sm text-green-700 dark:text-green-400">Event created.</p>}
-        <button className="min-h-12 rounded-full bg-accent px-6 font-medium text-black" type="submit">Create event</button>
+        <button className="min-h-12 rounded-[14px] bg-yellow px-6 font-semibold text-[#202127]" type="submit">Create event</button>
       </form>
 
       <section className="flex flex-col gap-3">
         <h2 className="font-medium">Events</h2>
         <ul className="flex flex-col gap-3">
           {list.map((e) => (
-            <li key={e.id} className="rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
+            <li key={e.id} className="rounded-[18px] bg-card p-4">
               <p className="font-medium">{e.title}</p>
-              <p className="text-xs text-neutral-500">{e.venue} · {fmt(e.startsAt)} to {fmt(e.endsAt)}</p>
+              <p className="text-xs text-muted">{e.venue} · {fmt(e.startsAt)} to {fmt(e.endsAt)}</p>
               <form action={setEventField} className="mt-2 flex gap-2">
                 <input type="hidden" name="id" value={e.id} />
-                <select name="field" defaultValue={e.field ?? ""} aria-label="Badge field" className="min-h-11 flex-1 rounded-xl border border-neutral-300 bg-transparent px-3 text-sm dark:border-neutral-700">
+                <select name="field" defaultValue={e.field ?? ""} aria-label="Badge field" className="min-h-11 flex-1 rounded-[12px] border border-line bg-card px-3 text-sm">
                   <option value="">No field badge</option>
                   {BADGE_FIELDS.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
                 </select>
-                <button type="submit" className="min-h-11 rounded-full border border-neutral-300 px-4 text-sm font-medium dark:border-neutral-700">Save</button>
+                <button type="submit" className="min-h-11 rounded-[14px] border border-line bg-card px-4 text-sm font-medium">Save</button>
               </form>
               <form action={setEventCoords} className="mt-2 flex gap-2">
                 <input type="hidden" name="id" value={e.id} />
-                <input name="coords" defaultValue={e.venueLat !== null && e.venueLon !== null ? `${e.venueLat}, ${e.venueLon}` : ""} placeholder="Map location: 13.7563, 100.5018" aria-label="Venue map location" className="min-h-11 flex-1 rounded-xl border border-neutral-300 bg-transparent px-3 text-sm dark:border-neutral-700" />
-                <button type="submit" className="min-h-11 rounded-full border border-neutral-300 px-4 text-sm font-medium dark:border-neutral-700">Save</button>
+                <input name="coords" defaultValue={e.venueLat !== null && e.venueLon !== null ? `${e.venueLat}, ${e.venueLon}` : ""} placeholder="Map location: 13.7563, 100.5018" aria-label="Venue map location" className="min-h-11 flex-1 rounded-[12px] border border-line bg-card px-3 text-sm" />
+                <button type="submit" className="min-h-11 rounded-[14px] border border-line bg-card px-4 text-sm font-medium">Save</button>
               </form>
-              <p className="mt-1 text-xs text-neutral-500">Typed code: <span className="font-mono">{e.checkInCode}</span></p>
-              <Link href={`/events/${e.slug}/qr`} className="mt-3 flex min-h-11 items-center justify-center rounded-full bg-accent px-4 text-sm font-medium text-black">
+              <p className="mt-1 text-xs text-muted">Typed code: <span className="font-mono">{e.checkInCode}</span></p>
+              <Link href={`/events/${e.slug}/qr`} className="mt-3 flex min-h-11 items-center justify-center rounded-[14px] bg-yellow px-4 text-sm font-semibold text-[#202127]">
                 Show check-in QR
               </Link>
             </li>
@@ -78,7 +78,7 @@ export default function AdminEventsPage(props: PageProps<"/admin/events">) {
     <main className="flex flex-col gap-4 p-4">
       <h1 className="text-2xl font-semibold">Organizer: events</h1>
       <Link href="/admin/evaluation" className="text-sm underline">Brain evaluation (admin)</Link>
-      <Suspense fallback={<p className="text-neutral-400">Loading…</p>}>
+      <Suspense fallback={<p className="text-muted">Loading…</p>}>
         <AdminView searchParams={props.searchParams} />
       </Suspense>
     </main>

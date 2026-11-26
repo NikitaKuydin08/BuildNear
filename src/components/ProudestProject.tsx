@@ -6,8 +6,8 @@ import { removeProject } from "@/app/profile/actions";
 
 type P = { id?: string; title: string; description: string; stack: string; url: string };
 
-const input = "min-h-12 w-full rounded-xl border border-neutral-300 bg-transparent px-4 dark:border-neutral-700";
-const outline = "flex min-h-12 w-full items-center justify-center rounded-full border border-neutral-300 px-6 text-sm font-medium dark:border-neutral-700";
+const input = "min-h-12 w-full rounded-[12px] border border-line bg-card px-4";
+const outline = "flex min-h-12 w-full items-center justify-center rounded-[14px] border border-line bg-card px-6 text-sm font-medium";
 
 // Collapsed by default. The fields stay in the form while hidden, so saving never loses the project.
 // Remove deletes the saved project right away (after a confirmation).
@@ -39,9 +39,9 @@ export function ProudestProject({ initial }: { initial: P | null }) {
   return (
     <div className="flex flex-col gap-3">
       {has && !open && (
-        <div className="rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
+        <div className="rounded-[14px] border border-line p-3">
           <p className="font-medium">{current!.title}</p>
-          {current!.description && <p className="text-sm text-neutral-500">{current!.description}</p>}
+          {current!.description && <p className="text-sm text-muted">{current!.description}</p>}
         </div>
       )}
 
@@ -60,7 +60,7 @@ export function ProudestProject({ initial }: { initial: P | null }) {
         </button>
         <Link href="/profile/repos" className={outline}>Pick it from my GitHub repositories</Link>
         {has && !asking && (
-          <button type="button" disabled={busy} onClick={() => setAsking(true)} className="min-h-11 text-sm text-neutral-500 underline disabled:opacity-50">
+          <button type="button" disabled={busy} onClick={() => setAsking(true)} className="min-h-11 text-sm text-muted underline disabled:opacity-50">
             {busy ? "Removing…" : "Remove proudest project"}
           </button>
         )}
@@ -68,8 +68,8 @@ export function ProudestProject({ initial }: { initial: P | null }) {
           <div className="flex flex-col gap-2 rounded-xl border border-red-300 p-3 dark:border-red-900">
             <p className="text-sm">Delete your proudest project from your profile right away?</p>
             <div className="flex gap-2">
-              <button type="button" onClick={remove} className="min-h-11 flex-1 rounded-full bg-red-600 px-4 text-sm font-medium text-white">Yes, delete</button>
-              <button type="button" onClick={() => setAsking(false)} className="min-h-11 flex-1 rounded-full border border-neutral-300 px-4 text-sm font-medium dark:border-neutral-700">Cancel</button>
+              <button type="button" onClick={remove} className="min-h-11 flex-1 rounded-[14px] bg-red-600 px-4 text-sm font-medium text-white">Yes, delete</button>
+              <button type="button" onClick={() => setAsking(false)} className="min-h-11 flex-1 rounded-[14px] border border-line bg-card px-4 text-sm font-medium">Cancel</button>
             </div>
           </div>
         )}

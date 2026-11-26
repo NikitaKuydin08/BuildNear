@@ -48,22 +48,22 @@ export function LiveQr({ slug }: { slug: string }) {
   }, [expiresAt, load]);
 
   if (error && !image) return <p className="text-red-600">Could not load the QR. Are you signed in as an admin?</p>;
-  if (!image) return <p className="text-neutral-400">Loading QR…</p>;
+  if (!image) return <p className="text-muted">Loading QR…</p>;
 
   const secs = Math.ceil(leftMs / 1000);
   const pct = Math.min(100, (leftMs / stepMs) * 100);
   return (
     <div className="flex w-full max-w-sm flex-col items-center gap-3">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={image} alt="Check-in QR code" className="w-full rounded-2xl bg-white p-2" />
+      <img src={image} alt="Check-in QR code" className="w-full rounded-[18px] bg-white p-2" />
       <div className="w-full">
-        <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-200">
           <div
             className={`h-full rounded-full transition-[width] duration-200 ${secs <= 5 ? "bg-red-500" : "bg-green-500"}`}
             style={{ width: `${pct}%` }}
           />
         </div>
-        <p className="mt-2 text-center text-sm tabular-nums text-neutral-500">New code in {secs} s</p>
+        <p className="mt-2 text-center text-sm tabular-nums text-muted">New code in {secs} s</p>
       </div>
       {error && <p className="text-sm text-red-600">Connection problem, retrying…</p>}
     </div>

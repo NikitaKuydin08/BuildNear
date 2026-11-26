@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
+import { Icon, btnPrimary, btnSecondary } from "@/components/ui";
 import { stopSharing, updateLocation } from "@/app/nearby/actions";
 
-const btn = "min-h-12 rounded-full px-6 font-medium";
 
 // Explicit, opt-in. The browser's own permission prompt only appears after the user taps the button.
 export function LocationPanel({ sharing, until }: { sharing: boolean; until: string | null }) {
@@ -30,29 +30,39 @@ export function LocationPanel({ sharing, until }: { sharing: boolean; until: str
 
   if (sharing) {
     return (
-      <div className="flex flex-col gap-3 rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
-        <p className="text-sm font-medium">You are visible to people nearby{until ? ` until about ${until}` : ""}.</p>
-        <p className="text-xs text-neutral-500">Only your approximate area is stored (about 1 km), never exact coordinates. It disappears after 4 hours unless you open this tab again.</p>
-        <div className="flex gap-2">
-          <button onClick={locate} disabled={pending} className={`${btn} flex-1 bg-accent text-black`}>Update now</button>
-          <button onClick={() => start(async () => { await stopSharing(); })} disabled={pending} className={`${btn} flex-1 border border-neutral-300 dark:border-neutral-700`}>Stop sharing</button>
+      <div className="flex flex-col gap-4 rounded-[18px] bg-lilac p-5">
+        <div className="flex gap-3">
+          <span className="text-purple"><Icon name="shield" /></span>
+          <div>
+            <p className="text-[15px] font-semibold">You’re visible nearby{until ? ` until about ${until}` : ""}</p>
+            <p className="mt-1 text-[13px] leading-[19px] text-muted">Only your approximate area is stored (about 1 km), never exact coordinates. It disappears after 4 hours unless you open this tab again.</p>
+          </div>
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        <div className="flex gap-2">
+          <button onClick={locate} disabled={pending} className={btnPrimary}>Update now</button>
+          <button onClick={() => start(async () => { await stopSharing(); })} disabled={pending} className={btnSecondary}>Stop sharing</button>
+        </div>
+        {error && <p className="text-[13px] text-red-600">{error}</p>}
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
-      <p className="text-sm font-medium">Find builders near you right now</p>
-      <p className="text-xs text-neutral-500">
-        If you share, other people who share can see you in this tab. We store only your approximate area (rounded to about 1 km), only your latest position, and delete it after 4 hours or when you stop. Nobody sees coordinates, only “same area” or an approximate distance.
-        See the <Link href="/privacy" className="underline">privacy notice</Link>.
-      </p>
-      <button onClick={locate} disabled={pending} className={`${btn} bg-accent text-black`}>
+    <div className="flex flex-col gap-4 rounded-[18px] bg-lilac p-5">
+      <div className="flex gap-3">
+        <span className="text-purple"><Icon name="pin" /></span>
+        <div>
+          <p className="text-[15px] font-semibold">Find builders around you right now</p>
+          <p className="mt-1 text-[13px] leading-[19px] text-muted">
+            If you share, other people who share can see you here. We store only your approximate area (about 1 km), only your latest position, and delete it after 4 hours or when you stop. Nobody sees coordinates, only “same area” or an approximate distance.{" "}
+            <Link href="/privacy" className="underline">Privacy notice</Link>
+          </p>
+        </div>
+      </div>
+      <button onClick={locate} disabled={pending} className={btnPrimary}>
         {pending ? "Saving…" : "Share my area"}
       </button>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-[13px] text-red-600">{error}</p>}
     </div>
   );
 }

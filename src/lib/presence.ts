@@ -29,3 +29,6 @@ export function distanceLabel(km: number) {
   if (km < 10) return `About ${Math.round(km)} km away`;
   return "Further away";
 }
+
+// True once the event (plus an optional grace period) is over. A helper so pages don't read the clock while rendering.
+export const hasEnded = (endsAt: Date, graceMs = 0) => Date.now() > endsAt.getTime() + graceMs;

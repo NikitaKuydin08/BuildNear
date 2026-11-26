@@ -40,7 +40,7 @@ export function PhotoUpload({ userId, name, photoAt }: { userId: string; name: s
         // eslint-disable-next-line @next/next/no-img-element
         <img src={src} alt="Your picture" className="size-20 shrink-0 rounded-full object-cover" />
       ) : (
-        <div className="flex size-20 shrink-0 items-center justify-center rounded-full bg-neutral-200 text-3xl font-semibold dark:bg-neutral-800">
+        <div className="flex size-20 shrink-0 items-center justify-center rounded-full bg-lilac text-3xl font-semibold text-purple">
           {name.charAt(0).toUpperCase()}
         </div>
       )}
@@ -50,7 +50,7 @@ export function PhotoUpload({ userId, name, photoAt }: { userId: string; name: s
           type="button"
           disabled={pending}
           onClick={() => input.current?.click()}
-          className="min-h-11 rounded-full bg-accent px-4 text-sm font-medium text-black"
+          className="min-h-11 rounded-[14px] bg-yellow px-4 text-sm font-semibold text-[#202127]"
         >
           {pending ? "Saving…" : src ? "Change picture" : "Add a picture"}
         </button>
@@ -59,7 +59,7 @@ export function PhotoUpload({ userId, name, photoAt }: { userId: string; name: s
             type="button"
             disabled={pending}
             onClick={() => start(async () => { await removePhoto(); setSrc(null); })}
-            className="min-h-11 rounded-full border border-neutral-300 px-4 text-sm font-medium dark:border-neutral-700"
+            className="min-h-11 rounded-[14px] border border-line bg-card px-4 text-sm font-medium"
           >
             Remove
           </button>

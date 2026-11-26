@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import jsQR from "jsqr";
+import { btnPrimary, btnSecondary } from "@/components/ui";
 
 // In-app scanner for the event QR. Decodes the camera picture on the phone (nothing is uploaded),
 // and only follows a link that belongs to this event on this site.
@@ -76,20 +77,20 @@ export function QrScanner({ slug }: { slug: string }) {
     <div className="flex flex-col gap-2">
       {open ? (
         <div className="flex flex-col gap-2">
-          <video ref={video} playsInline muted className="aspect-square w-full rounded-2xl bg-black object-cover" />
-          <button onClick={() => setOpen(false)} className="min-h-12 rounded-full border border-neutral-300 px-6 font-medium dark:border-neutral-700">
+          <video ref={video} playsInline muted className="aspect-square w-full rounded-[18px] bg-black object-cover" />
+          <button onClick={() => setOpen(false)} className={btnSecondary}>
             Cancel
           </button>
         </div>
       ) : (
         <button
           onClick={() => { setMsg(null); setOpen(true); }}
-          className="min-h-12 rounded-full bg-accent px-6 font-medium text-black"
+          className={btnPrimary}
         >
           Scan QR to check in
         </button>
       )}
-      {msg && <p className="text-sm text-red-600">{msg}</p>}
+      {msg && <p className="text-[13px] text-red-600">{msg}</p>}
     </div>
   );
 }

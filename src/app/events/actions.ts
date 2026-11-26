@@ -30,6 +30,11 @@ export async function checkIn(formData: FormData) {
   if (!tokenOk && !codeOk) redirect(`/events/${slug}?error=code`);
 
   const db = getDb();
+  // "I want to explore" from the review screen (Figma 02) is saved as the profile's interests (tags).
+  if (formData.has("explore")) {
+    const tags = [...new Set(String(formData.get("explore") ?? "").split(",").map((x) => x.trim().slice(0, 30)).filter(Boolean))].slice(0, 12);
+    await db.update(users).set({ tags }).where(eq(users.id, userId));
+  }
   await db.insert(attendances).values({ userId, eventId: event.id }).onConflictDoNothing();
   await db
     .update(attendances)
@@ -46,7 +51,7 @@ export async function checkIn(formData: FormData) {
   });
   revalidatePath("/people");
   revalidatePath(`/events/${slug}`);
-  redirect(`/people?event=${slug}`);
+  redirect(`/events/${slug}/welcome`);
 }
 
 // Join the event tab ahead of time (flow step 3). Joining does not prove presence: only the venue check-in does that.
@@ -74,7 +79,8 @@ export async function leaveEvent(formData: FormData) {
     .set({ leftAt: new Date() })
     .where(and(eq(attendances.userId, userId), eq(attendances.eventId, event.id)));
   revalidatePath(`/events/${slug}`);
-  redirect(`/events/${slug}`);
+  revalidatePath("/people");
+  redirect(`/events/${slug}/visibility`);
 }
 
 // Mint the attendance badge. Requires a venue check-in; one badge per (user, event).
@@ -85,11 +91,13 @@ export async function claimBadge(formData: FormData) {
   const wallet = String(formData.get("wallet") ?? "").trim();
   const event = await getEventBySlug(slug);
   if (!event) redirect("/events");
-  const back = `/events/${slug}`;
+  // The claim lives on the Badges tab (Figma 18 · wallet claim, 19 · claimed).
+  const back = `/badges/wallet?event=${encodeURIComponent(slug)}`;
+  const done = `/badges/claimed?event=${encodeURIComponent(slug)}`;
 
-  if (!isWallet(wallet)) redirect(`${back}?error=wallet`);
+  if (!isWallet(wallet)) redirect(`${back}&error=wallet`);
   // Guard against pasting the app's own minter address by mistake.
-  if (isMinterAddress(wallet)) redirect(`${back}?error=minter`);
+  if (isMinterAddress(wallet)) redirect(`${back}&error=minter`);
 
   const db = getDb();
   const [att] = await db
@@ -97,8 +105,8 @@ export async function claimBadge(formData: FormData) {
     .from(attendances)
     .where(and(eq(attendances.userId, userId), eq(attendances.eventId, event.id)))
     .limit(1);
-  if (!att?.checkedInAt) redirect(`${back}?error=notchecked`);
-  if (await getBadge(userId, event.id)) redirect(back);
+  if (!att?.checkedInAt) redirect(`${back}&error=notchecked`);
+  if (await getBadge(userId, event.id)) redirect(done);
 
   await db.update(users).set({ walletAddress: wallet }).where(eq(users.id, userId));
 
@@ -107,7 +115,7 @@ export async function claimBadge(formData: FormData) {
   try {
     onChain = await hasBadgeOnChain(wallet, event.slug);
   } catch {}
-  if (onChain) redirect(`${back}?error=onchain`);
+  if (onChain) redirect(`${back}&error=onchain`);
 
   // Two steps, so a slow confirmation can never leave the user stuck: send, save the hash, then wait.
   let txHash: string;
@@ -115,7 +123,7 @@ export async function claimBadge(formData: FormData) {
     txHash = await sendMint(wallet, event.slug, event.title);
   } catch (e) {
     console.error("mint failed", e instanceof Error ? e.message : e);
-    redirect(`${back}?error=mint`);
+    redirect(`${back}&error=mint`);
   }
   await db.insert(badges).values({ userId, eventId: event.id, wallet, txHash }).onConflictDoNothing();
   const result = await confirmMint(txHash);
@@ -123,9 +131,9 @@ export async function claimBadge(formData: FormData) {
     await db.update(badges).set({ tokenId: result.tokenId }).where(and(eq(badges.userId, userId), eq(badges.eventId, event.id)));
   } else if (result.state === "reverted") {
     await db.delete(badges).where(and(eq(badges.userId, userId), eq(badges.eventId, event.id)));
-    redirect(`${back}?error=mint`);
+    redirect(`${back}&error=mint`);
   }
-  // "pending" keeps the saved hash: the event page checks it again later.
-  revalidatePath(back);
-  redirect(back);
+  // "pending" keeps the saved hash: the claimed screen checks it again later.
+  revalidatePath("/badges");
+  redirect(done);
 }

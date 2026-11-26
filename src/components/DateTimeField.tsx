@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const box = "min-h-12 rounded-xl border border-neutral-300 bg-transparent px-3 dark:border-neutral-700";
+const box = "min-h-12 rounded-[12px] border border-line bg-card px-3";
 const pad = (v: string) => v.padStart(2, "0");
 
 type Slot = { date: string; hour: string; minute: string };

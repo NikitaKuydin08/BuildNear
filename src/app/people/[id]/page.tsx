@@ -2,16 +2,19 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/Avatar";
-import { IntroControl } from "@/components/IntroControl";
-import { FIELDS } from "@/lib/fields";
 import { BadgeShelf } from "@/components/BadgeShelf";
+import { IntroControl } from "@/components/IntroControl";
+import { MEET_BAND } from "@/components/PersonCard";
+import { BackBar, Chips, Icon, SectionLabel, Screen, btnSecondary } from "@/components/ui";
+import { FIELDS } from "@/lib/fields";
+import type { MeetPreference } from "@/lib/match";
 import { canConnect, fieldProgress, getUser, introStatesFor, listProjects } from "@/lib/queries";
 import { requireUserId } from "@/lib/session";
 
-const MEET: Record<string, string> = { in_person: "Happy to meet in person", open: "Open to meeting", chat_first: "Chat first" };
 const WORK: Record<string, string> = { employed: "Employed", looking: "Looking for a job", hiring: "Hiring" };
 
-// What other people see: picture, fields, stack, projects. Contacts are never here; they appear in the Inbox after an accepted intro.
+// A builder's full profile (no Figma screen: built from the card's parts). Contacts are never here;
+// they appear in the chat after an accepted introduction.
 async function Profile({ params }: { params: PageProps<"/people/[id]">["params"] }) {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
@@ -27,82 +30,91 @@ async function Profile({ params }: { params: PageProps<"/people/[id]">["params"]
 
   const proudest = projects.find((p) => p.featured);
   const others = projects.filter((p) => !p.featured);
-  const fieldChips = person.topics.map((t) => FIELDS.find((f) => f.key === t)).filter((f) => !!f);
-  const extraTopics = person.topics.filter((t) => !FIELDS.some((f) => f.key === t));
+  const curious = [...person.topics.map((t) => FIELDS.find((f) => f.key === t)?.label ?? t), ...person.tags];
 
   return (
-    <>
-      <div className="flex items-center gap-4">
-        <Avatar userId={person.id} name={person.name} photoAt={person.photoAt} size={80} />
-        <div className="min-w-0">
-          <h1 className="truncate text-2xl font-semibold">{person.name}</h1>
-          <p className="text-sm text-neutral-500">
-            {MEET[person.meetPreference] ?? ""}
-            {person.workStatus ? ` · ${WORK[person.workStatus]}` : ""}
-          </p>
+    <Screen>
+      <div className="overflow-hidden rounded-[22px] bg-card">
+        <div className="h-20 bg-lavender px-5 pt-5">
+          <p className="text-[10px] font-semibold uppercase tracking-[1.2px] text-purple">{MEET_BAND[person.meetPreference as MeetPreference] ?? ""}</p>
+        </div>
+        <div className="px-5 pb-5">
+          <div className="-mt-6"><Avatar userId={person.id} name={person.name} photoAt={person.photoAt} size={80} /></div>
+          <h1 className="mt-4 text-[26px] font-semibold leading-[32px] tracking-[-0.4px]">{person.name}</h1>
+          {person.workStatus && <p className="mt-1 text-[13px] text-muted">{WORK[person.workStatus]}</p>}
+          {person.stack.length > 0 && (
+            <>
+              <SectionLabel className="mt-5">Builds with · From GitHub</SectionLabel>
+              <div className="mt-2.5"><Chips items={person.stack} max={12} /></div>
+            </>
+          )}
+          {curious.length > 0 && (
+            <>
+              <SectionLabel className="mt-5">Curious about</SectionLabel>
+              <div className="mt-2.5"><Chips items={curious} tone="lilac" max={12} /></div>
+            </>
+          )}
         </div>
       </div>
 
-      {(fieldChips.length > 0 || extraTopics.length > 0) && (
-        <div className="flex flex-wrap gap-2">
-          {fieldChips.map((f) => (
-            <span key={f.key} style={{ backgroundColor: f.color }} className="rounded-full px-3 py-1 text-sm font-medium text-black">{f.label}</span>
-          ))}
-          {extraTopics.map((t) => (
-            <span key={t} className="rounded-full bg-neutral-100 px-3 py-1 text-sm dark:bg-neutral-800">{t}</span>
-          ))}
-        </div>
-      )}
-
-      <BadgeShelf rows={progress} />
-
-      {person.stack.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {person.stack.map((s) => (
-            <span key={s} className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs dark:bg-neutral-800">{s}</span>
-          ))}
-        </div>
-      )}
-
       {proudest && (
-        <section className="rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
-          <p className="text-xs uppercase tracking-wide text-neutral-500">Proudest project</p>
-          <p className="mt-1 text-lg font-medium">{proudest.title}</p>
-          {proudest.description && <p className="text-sm text-neutral-500">{proudest.description}</p>}
-          {proudest.stack.length > 0 && <p className="mt-1 text-xs text-neutral-500">{proudest.stack.join(", ")}</p>}
-          {proudest.url && <a href={proudest.url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-sm underline">Open link</a>}
+        <section className="mt-4 rounded-[18px] bg-card p-5">
+          <SectionLabel>Proudest project{proudest.visibility === "private" ? " · private" : ""}</SectionLabel>
+          <p className="mt-2 text-[18px] font-semibold">{proudest.title}</p>
+          {proudest.description && <p className="mt-1 text-[14px] leading-[20px] text-muted">{proudest.description}</p>}
+          {proudest.stack.length > 0 && <div className="mt-3"><Chips items={proudest.stack} /></div>}
+          {proudest.url && (
+            <a href={proudest.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-[13px] font-semibold text-purple">
+              Open link <Icon name="external" size={14} />
+            </a>
+          )}
         </section>
       )}
 
       {others.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <h2 className="font-medium">Other projects</h2>
-          {others.map((p) => (
-            <div key={p.id} className="rounded-2xl border border-neutral-200 p-3 dark:border-neutral-800">
-              <p className="text-sm font-medium">{p.title}</p>
-              {p.description && <p className="text-sm text-neutral-500">{p.description}</p>}
-              {p.url && <a href={p.url} target="_blank" rel="noreferrer" className="text-xs underline">Open link</a>}
-            </div>
-          ))}
+        <section className="mt-6">
+          <SectionLabel>Other projects</SectionLabel>
+          <div className="mt-3 flex flex-col gap-3">
+            {others.map((p) => (
+              <div key={p.id} className="rounded-[16px] bg-card p-4">
+                <p className="text-[15px] font-semibold">{p.title}</p>
+                {p.description && <p className="mt-1 text-[13px] text-muted">{p.description}</p>}
+                {p.url && (
+                  <a href={p.url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-purple">
+                    Open link <Icon name="external" size={12} />
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
-      {isMe ? (
-        <Link href="/profile" className="flex min-h-12 items-center justify-center rounded-full border border-neutral-300 px-6 font-medium dark:border-neutral-700">Edit my profile</Link>
-      ) : (
-        <IntroControl toUserId={id} back={`/people/${id}`} state={states.get(id)} />
+      {progress.length > 0 && (
+        <section className="mt-6">
+          <SectionLabel>Badges</SectionLabel>
+          <div className="mt-3"><BadgeShelf rows={progress} /></div>
+        </section>
       )}
-    </>
+
+      <div className="mt-8">
+        {isMe ? (
+          <Link href="/profile" className={btnSecondary}>Edit my profile</Link>
+        ) : (
+          <IntroControl toUserId={id} back={`/people/${id}`} state={states.get(id)} />
+        )}
+      </div>
+    </Screen>
   );
 }
 
 export default function PersonPage(props: PageProps<"/people/[id]">) {
   return (
-    <main className="flex flex-col gap-4 p-4">
-      <Link href="/events" className="text-sm underline">← Events</Link>
-      <Suspense fallback={<p className="text-neutral-400">Loading…</p>}>
+    <>
+      <BackBar href="/people" title="Builder profile" />
+      <Suspense fallback={<p className="p-5 text-muted">Loading…</p>}>
         <Profile params={props.params} />
       </Suspense>
-    </main>
+    </>
   );
 }

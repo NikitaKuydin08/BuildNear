@@ -15,10 +15,10 @@ async function QrView({ params }: { params: PageProps<"/events/[slug]/qr">["para
   return (
     <div className="flex flex-col items-center gap-4 text-center">
       <h1 className="text-2xl font-semibold">{event.title}</h1>
-      <p className="text-neutral-500">Scan to check in. The QR changes every 30 seconds.</p>
+      <p className="text-muted">Scan to check in. The QR changes every 30 seconds.</p>
       <LiveQr slug={slug} />
-      <div className="mt-2 w-full max-w-sm rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
-        <p className="text-xs text-neutral-500">QR not working for someone? Give them this code to type in.</p>
+      <div className="mt-2 w-full max-w-sm rounded-[18px] bg-card p-4">
+        <p className="text-xs text-muted">QR not working for someone? Give them this code to type in.</p>
         <p className="mt-1 font-mono text-2xl font-semibold tracking-widest">{event.checkInCode}</p>
       </div>
     </div>
@@ -28,7 +28,7 @@ async function QrView({ params }: { params: PageProps<"/events/[slug]/qr">["para
 export default function QrPage(props: PageProps<"/events/[slug]/qr">) {
   return (
     <main className="flex flex-col gap-4 p-4">
-      <Suspense fallback={<p className="text-neutral-400">Loading…</p>}>
+      <Suspense fallback={<p className="text-muted">Loading…</p>}>
         <QrView params={props.params} />
       </Suspense>
     </main>

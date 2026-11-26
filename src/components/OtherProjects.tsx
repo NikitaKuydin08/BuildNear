@@ -6,7 +6,7 @@ import { removeProject } from "@/app/profile/actions";
 // `id` exists only for projects that are already saved.
 type P = { id?: string; title: string; description: string; stack: string; url: string };
 
-const input = "min-h-12 w-full rounded-xl border border-neutral-300 bg-transparent px-4 dark:border-neutral-700";
+const input = "min-h-12 w-full rounded-[12px] border border-line bg-card px-4";
 const MAX = 3;
 
 // Shows only the projects you have, plus a button to add the next one (1/3, 2/3, 3/3), so the page stays short.
@@ -47,26 +47,26 @@ export function OtherProjects({ initial }: { initial: P[] }) {
       {slots.map((i, n) => {
         const p = initial[i];
         return (
-          <div key={i} className="flex flex-col gap-2 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
+          <div key={i} className="flex flex-col gap-2 rounded-[14px] border border-line p-3">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium">Project {n + 1}/{MAX}</p>
               {asking === i ? (
                 <span className="flex items-center gap-2">
-                  <button type="button" onClick={() => remove(i)} className="min-h-11 rounded-full bg-red-600 px-3 text-sm font-medium text-white">Yes, delete</button>
-                  <button type="button" onClick={() => setAsking(null)} className="min-h-11 px-2 text-sm text-neutral-500 underline">Cancel</button>
+                  <button type="button" onClick={() => remove(i)} className="min-h-11 rounded-[14px] bg-red-600 px-3 text-sm font-medium text-white">Yes, delete</button>
+                  <button type="button" onClick={() => setAsking(null)} className="min-h-11 px-2 text-sm text-muted underline">Cancel</button>
                 </span>
               ) : (
                 <button
                   type="button"
                   disabled={busy === i}
                   onClick={() => (initial[i]?.id ? setAsking(i) : remove(i))}
-                  className="min-h-11 px-2 text-sm text-neutral-500 underline disabled:opacity-50"
+                  className="min-h-11 px-2 text-sm text-muted underline disabled:opacity-50"
                 >
                   {busy === i ? "Removing…" : "Remove"}
                 </button>
               )}
             </div>
-            {asking === i && <p className="text-xs text-neutral-500">This deletes the project from your profile right away.</p>}
+            {asking === i && <p className="text-xs text-muted">This deletes the project from your profile right away.</p>}
             <input name={`o${i}title`} defaultValue={p?.title ?? ""} placeholder="Title" maxLength={60} className={input} />
             <input name={`o${i}desc`} defaultValue={p?.description ?? ""} placeholder="One line about it" maxLength={140} className={input} />
             <input name={`o${i}stack`} defaultValue={p?.stack ?? ""} placeholder="Stack (comma separated)" className={input} />
@@ -78,7 +78,7 @@ export function OtherProjects({ initial }: { initial: P[] }) {
         <button
           type="button"
           onClick={add}
-          className="flex min-h-12 items-center justify-center rounded-full border border-neutral-300 px-6 text-sm font-medium dark:border-neutral-700"
+          className="flex min-h-12 items-center justify-center rounded-[14px] border border-line bg-card px-6 text-sm font-medium"
         >
           {slots.length === 0 ? `Add a project (1/${MAX})` : `Add another project (${slots.length + 1}/${MAX})`}
         </button>

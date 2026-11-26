@@ -1,46 +1,53 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { AcrossFeed, PeopleFeed, type Tab } from "@/components/PeopleFeed";
+import { parseIndex } from "@/components/PersonDeck";
+import { TopBar } from "@/components/TopBar";
+import { EventPill, Eyebrow, Icon, Lead, Screen, Title, btnPrimary, btnSecondary } from "@/components/ui";
 import { brainEnabled } from "@/lib/brain";
-import { parseFilters } from "@/lib/feed-filters";
+import { filterQuery, parseFilters } from "@/lib/feed-filters";
 import { isHere } from "@/lib/presence";
 import { isAdminUser } from "@/lib/organizer";
-import { activeEventsFor, purgeExpiredLocations } from "@/lib/queries";
+import { activeEventsFor, eventCounts, purgeExpiredLocations } from "@/lib/queries";
 import { requireUserId } from "@/lib/session";
 
-// Home: the people at the event I am checked in to. Events are the second tab.
+// Figma 05/06 · People at the event: the event I am checked in to, then one builder at a time.
 async function HomeView({ searchParams }: { searchParams: PageProps<"/people">["searchParams"] }) {
   const sp = await searchParams;
   const meId = await requireUserId("/people");
   const admin = await isAdminUser(meId);
   await purgeExpiredLocations();
-  const tab: Tab = sp.tab === "for-you" ? "for-you" : admin && sp.tab === "brain" && brainEnabled() ? "brain" : admin && sp.tab === "across" && brainEnabled() ? "across" : "everyone";
+  const tab: Tab =
+    sp.tab === "everyone" ? "everyone" : admin && sp.tab === "brain" && brainEnabled() ? "brain" : admin && sp.tab === "across" && brainEnabled() ? "across" : "for-you";
+  const index = parseIndex(sp.i);
 
   const past = await activeEventsFor(meId);
   const active = past.filter((r) => isHere(r.checkedInAt, r.leftAt, r.event.endsAt));
   if (active.length === 0) {
     return (
       <>
-      <div className="flex flex-col gap-3 rounded-2xl border border-neutral-200 p-5 dark:border-neutral-800">
-        <p className="font-medium">You are not checked in anywhere yet.</p>
-        <p className="text-sm text-neutral-500">
-          Scan the QR code at the venue with your phone camera. After you check in, everyone at the event shows up here.
-        </p>
-        <Link href="/events" className="flex min-h-12 items-center justify-center rounded-full bg-accent px-6 font-medium text-black">
-          See events
-        </Link>
-      </div>
-      {admin && past.length > 0 && brainEnabled() && (
-        <>
-          <div>
-            <h2 className="text-lg font-semibold">From your past events</h2>
-            <p className="text-sm text-neutral-500">People from events you checked in to, matched to you by the Brain. You can still ask for an intro.</p>
-          </div>
-          <Suspense fallback={<p className="text-neutral-400">Loading people…</p>}>
-            <AcrossFeed meId={meId} back="/people" />
-          </Suspense>
-        </>
-      )}
+        <Eyebrow className="mt-2">Not checked in yet</Eyebrow>
+        <Title size={32} className="mt-3">
+          Walk in.
+          <br />
+          Find your people.
+        </Title>
+        <Lead className="mt-3">Scan the QR code at the venue with your phone camera. After you check in, everyone at the event shows up here.</Lead>
+        <div className="mt-8 flex flex-col gap-3">
+          <Link href="/events" className={btnPrimary}>See events</Link>
+          <Link href="/nearby" className={btnSecondary}>At a café or co-working? Find builders nearby</Link>
+        </div>
+        {admin && past.length > 0 && brainEnabled() && (
+          <section className="mt-10">
+            <p className="text-[19px] font-semibold">From your past events</p>
+            <p className="mt-1 text-[13px] text-muted">Admin view: people from events you checked in to, matched by the Brain.</p>
+            <div className="mt-4">
+              <Suspense fallback={<p className="text-muted">Loading people…</p>}>
+                <AcrossFeed meId={meId} base="/people" index={index} />
+              </Suspense>
+            </div>
+          </section>
+        )}
       </>
     );
   }
@@ -48,41 +55,48 @@ async function HomeView({ searchParams }: { searchParams: PageProps<"/people">["
   const current = active.find((r) => r.event.slug === sp.event) ?? active[0];
   const { event } = current;
   const base = `/people?event=${event.slug}`;
+  const filters = parseFilters(sp);
+  const counts = await eventCounts(event.id);
+  const fq = filterQuery(filters);
+  const filterHref = `/people/filters?event=${event.slug}${tab !== "for-you" ? `&tab=${tab}` : ""}${fq ? `&${fq}` : ""}`;
 
   return (
     <>
-      <div>
-        <p className="text-xs uppercase tracking-wide text-neutral-500">You are at</p>
-        <h2 className="text-lg font-semibold">{event.title}</h2>
-        <p className="text-sm text-neutral-500">
-          {event.venue} · <Link href={`/events/${event.slug}`} className="underline">Event details</Link>
-        </p>
-      </div>
+      <EventPill href={`/events/${event.slug}`} title={event.title} sub={`Checked in · ${counts.here} ${counts.here === 1 ? "builder" : "builders"} here`} />
       {active.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto">
+        <div className="mt-3 flex gap-2 overflow-x-auto">
           {active.map((r) => (
             <Link
               key={r.event.id}
               href={`/people?event=${r.event.slug}`}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-sm ${r.event.id === event.id ? "bg-accent font-medium text-black" : "border border-neutral-300 dark:border-neutral-700"}`}
+              className={`shrink-0 rounded-[10px] px-3 py-2 text-[12px] font-medium ${r.event.id === event.id ? "bg-purple text-white" : "border border-line bg-card text-muted"}`}
             >
               {r.event.title}
             </Link>
           ))}
         </div>
       )}
-      <PeopleFeed eventId={event.id} endsAt={event.endsAt} base={base} meId={meId} tab={tab} admin={admin} filters={parseFilters(sp)} />
+      <div className="mt-6 flex items-center justify-between">
+        <Title size={27}>People here</Title>
+        <Link href={filterHref} aria-label="Filter people" className="flex size-11 items-center justify-center rounded-[12px] text-ink hover:bg-purple/5">
+          <Icon name="filter" />
+        </Link>
+      </div>
+      <p className="mt-1.5 text-[13px] text-muted">A shared room. A good place to start.</p>
+      <PeopleFeed eventId={event.id} endsAt={event.endsAt} base={base} meId={meId} tab={tab} admin={admin} filters={filters} index={index} />
     </>
   );
 }
 
 export default function PeopleHome(props: PageProps<"/people">) {
   return (
-    <main className="flex flex-col gap-4 p-4">
-      <h1 className="text-2xl font-semibold">People</h1>
-      <Suspense fallback={<p className="text-neutral-400">Loading…</p>}>
-        <HomeView searchParams={props.searchParams} />
-      </Suspense>
-    </main>
+    <>
+      <TopBar />
+      <Screen>
+        <Suspense fallback={<p className="text-muted">Loading…</p>}>
+          <HomeView searchParams={props.searchParams} />
+        </Suspense>
+      </Screen>
+    </>
   );
 }

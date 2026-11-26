@@ -1,26 +1,54 @@
 @import "tailwindcss";
 
-/* Theme is class-based so the switch in the top bar works (and follows the phone setting on first visit). */
+/* Theme is class-based so the dark mode switch on the profile works (and follows the phone setting on first visit). */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* BuildNear design palette (from the Figma mobile kit). Dark values are our own, keeping the same roles. */
 :root {
-  --background: #fffdf8;
-  --foreground: #171717;
-  --accent: #f2b705; /* yellow from the logo */
-  --accent-2: #8e5cf0; /* violet from the logo */
+  --bg: #f6f7f9;
+  --card: #ffffff;
+  --ink: #202127;
+  --muted: #6c707e;
+  --line: #e7e8ee;
+  --purple: #7755dc;
+  --yellow: #ffcf32;
+  --lilac: #f0ebfa;
+  --lavender: #e8e2f8;
+  --gold: #ffe08a;
+  --soft: #f6f7f9; /* grey chips and inputs on white cards */
 }
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --bg: #111114;
+  --card: #1b1b21;
+  --ink: #ededf2;
+  --muted: #9a9daa;
+  --line: #2c2d36;
+  --purple: #a48bf5;
+  --yellow: #ffcf32;
+  --lilac: #261f3a;
+  --lavender: #2f2648;
+  --gold: #4a3d12;
+  --soft: #24252c;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-accent: var(--accent);
-  --color-accent2: var(--accent-2);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-purple: var(--purple);
+  --color-yellow: var(--yellow);
+  --color-lilac: var(--lilac);
+  --color-lavender: var(--lavender);
+  --color-gold: var(--gold);
+  --color-soft: var(--soft);
+  /* Older pages (admin, privacy) still use these names. */
+  --color-background: var(--bg);
+  --color-foreground: var(--ink);
+  --color-accent: var(--yellow);
+  --color-accent2: var(--purple);
+  --font-sans: var(--font-inter), Inter, Arial, sans-serif;
 }
 
 html {
@@ -32,9 +60,10 @@ html.dark {
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-inter), Inter, Arial, sans-serif;
+  letter-spacing: -0.15px;
   overscroll-behavior-y: none;
 }
 
@@ -52,6 +81,6 @@ button {
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent-2);
+  outline: 3px solid var(--purple);
   outline-offset: 2px;
 }

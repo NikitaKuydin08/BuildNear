@@ -1,177 +1,111 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { and, eq } from "drizzle-orm";
-import { getDb } from "@/db";
-import { badges } from "@/db/schema";
-import { PeopleFeed, type Tab } from "@/components/PeopleFeed";
-import { badgeConfigured, lookupMint, txUrl } from "@/lib/chain";
-import { brainEnabled } from "@/lib/brain";
-import { parseFilters } from "@/lib/feed-filters";
-import { mapEmbedUrl, mapOpenUrl } from "@/lib/venue";
-import { isAdminUser } from "@/lib/organizer";
-import { getAttendance, getBadge, getEventBySlug, getUser } from "@/lib/queries";
-import { requireUserId } from "@/lib/session";
+import { CurrentEvent } from "@/components/CurrentEvent";
 import { QrScanner } from "@/components/QrScanner";
-import { checkIn, claimBadge, joinEvent, leaveEvent } from "../actions";
+import { BackBar, Icon, Poster, Screen, btnPrimary, btnSecondary, eventWhen, inputCls } from "@/components/ui";
+import { hasEnded, isHere } from "@/lib/presence";
+import { eventCounts, getAttendance, getEventBySlug } from "@/lib/queries";
+import { requireUserId } from "@/lib/session";
+import { mapEmbedUrl, mapOpenUrl } from "@/lib/venue";
+import { checkIn, joinEvent } from "../actions";
 
 type Props = PageProps<"/events/[slug]">;
 
 const ERRORS: Record<string, string> = {
   code: "That QR or code didn't work. Scan the live QR again, or type the code shown at the venue.",
   window: "Check-in is only open during the event.",
-  wallet: "That doesn't look like a wallet address (0x… with 42 characters).",
-  minter: "That is the app's own wallet. Paste your personal wallet address from MetaMask.",
-  notchecked: "Check in at the venue first, then claim your badge.",
-  mint: "The badge couldn't be minted right now. Try again in a minute.",
-  onchain: "This wallet already holds a badge for this event.",
 };
 
+// Checked in: Figma 14 · Current event. Before that: the concept's "Walk in. Find your people." check-in card
+// (joining ahead and the typed-code fallback have no Figma screen; they use the same parts).
 async function EventView({ params, searchParams }: { params: Props["params"]; searchParams: Props["searchParams"] }) {
   const { slug } = await params;
   const sp = await searchParams;
   const error = typeof sp.error === "string" ? ERRORS[sp.error] : undefined;
 
-  const meId = await requireUserId();
-  const admin = await isAdminUser(meId);
-  const tab: Tab = sp.tab === "for-you" ? "for-you" : admin && sp.tab === "brain" && brainEnabled() ? "brain" : "everyone";
+  const meId = await requireUserId(`/events/${slug}`);
   const event = await getEventBySlug(slug);
   if (!event) notFound();
-
-  const attendance = await getAttendance(meId, event.id);
-  // Checked in and not marked as left since.
-  const atVenue = !!attendance?.checkedInAt && !(attendance.leftAt && attendance.leftAt >= attendance.checkedInAt);
-  const [foundBadge, me] = await Promise.all([getBadge(meId, event.id), getUser(meId)]);
-  let badge: typeof foundBadge | null = foundBadge;
-  // A mint that was still pending when the user left: look again now, and fill in the token ID or drop a failed one.
-  if (badge && !badge.tokenId && badgeConfigured()) {
-    const res = await lookupMint(badge.txHash);
-    if (res.state === "confirmed") {
-      await getDb().update(badges).set({ tokenId: res.tokenId }).where(and(eq(badges.userId, meId), eq(badges.eventId, event.id)));
-      badge = { ...badge, tokenId: res.tokenId };
-    } else if (res.state === "reverted") {
-      await getDb().delete(badges).where(and(eq(badges.userId, meId), eq(badges.eventId, event.id)));
-      badge = null;
-    }
-  }
+  const [attendance, counts] = await Promise.all([getAttendance(meId, event.id), eventCounts(event.id)]);
+  const atVenue = isHere(attendance?.checkedInAt ?? null, attendance?.leftAt ?? null, event.endsAt);
+  const over = hasEnded(event.endsAt);
 
   return (
-    <main className="flex flex-col gap-4 p-4">
-      <div>
-        <Link href="/events" className="text-sm text-neutral-500">
-          ← Events
-        </Link>
-        <h1 className="mt-1 text-2xl font-semibold">{event.title}</h1>
-        <p className="text-sm text-neutral-500">{event.venue}</p>
-      </div>
+    <Screen>
+      {atVenue ? (
+        <CurrentEvent event={event} />
+      ) : (
+        <>
+          <Poster title={event.title} startsAt={event.startsAt} />
+          <p className="mt-6 text-[27px] font-semibold leading-[33px] tracking-[-0.4px]">{event.title}</p>
+          <p className="mt-2 text-[15px] leading-[22px] text-muted">
+            {eventWhen(event.startsAt)} · Bangkok time
+            <br />
+            {event.venue} · {counts.joined} {counts.joined === 1 ? "builder" : "builders"} joining
+          </p>
+
+          {attendance?.checkedInAt && (
+            <p className="mt-5 rounded-[14px] bg-lilac p-4 text-[13px] font-medium text-purple">
+              {over ? "You were here. Your badge is on the Badges tab." : "You’re marked as left. Scan the QR again to show up as here now."}
+            </p>
+          )}
+
+          {!attendance && !over && (
+            <form action={joinEvent} className="mt-6 flex flex-col gap-3 rounded-[18px] bg-card p-5">
+              <input type="hidden" name="slug" value={slug} />
+              <p className="text-[15px] font-semibold">Going to this event?</p>
+              <p className="text-[13px] leading-[19px] text-muted">Join so others see you are coming. Your contacts stay hidden. You check in at the venue.</p>
+              <button className={btnPrimary} type="submit">Join this event</button>
+            </form>
+          )}
+          {attendance && !attendance.checkedInAt && !over && (
+            <p className="mt-5 rounded-[14px] bg-lilac p-4 text-[13px] font-medium text-purple">You joined this event. Check in when you arrive at the venue.</p>
+          )}
+
+          {!over && (
+            <div className="mt-6 flex flex-col gap-3 rounded-[18px] bg-card p-5">
+              <div className="flex gap-3">
+                <span className="text-purple"><Icon name="shield" /></span>
+                <div>
+                  <p className="text-[15px] font-semibold">At the venue?</p>
+                  <p className="mt-1 text-[13px] leading-[19px] text-muted">Scan the QR code on the screen to check in. You choose when your profile becomes visible.</p>
+                </div>
+              </div>
+              <QrScanner slug={slug} />
+              {error && <p className="text-[13px] text-red-600">{error}</p>}
+              <details className="text-[13px]">
+                <summary className="cursor-pointer text-muted">QR not working?</summary>
+                <form action={checkIn} className="mt-3 flex flex-col gap-2">
+                  <p className="text-[12px] text-muted">Ask the organiser for the check-in code and type it here.</p>
+                  <input type="hidden" name="slug" value={slug} />
+                  <input name="code" required autoComplete="off" autoCapitalize="characters" placeholder="Check-in code" className={inputCls} />
+                  <button className={btnSecondary} type="submit">Check in with code</button>
+                </form>
+              </details>
+            </div>
+          )}
+        </>
+      )}
 
       {event.venueLat !== null && event.venueLon !== null && (
-        <div className="overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-800">
-          <iframe
-            title={`Map of ${event.venue}`}
-            src={mapEmbedUrl(event.venueLat, event.venueLon)}
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            className="h-48 w-full border-0"
-          />
-          <a href={mapOpenUrl(event.venueLat, event.venueLon)} target="_blank" rel="noreferrer" className="block px-4 py-2 text-sm underline">
-            Open the map
+        <div className="mt-6 overflow-hidden rounded-[18px] bg-card">
+          <iframe title={`Map of ${event.venue}`} src={mapEmbedUrl(event.venueLat, event.venueLon)} loading="lazy" referrerPolicy="no-referrer" className="h-48 w-full border-0" />
+          <a href={mapOpenUrl(event.venueLat, event.venueLon)} target="_blank" rel="noreferrer" className="flex items-center gap-1 px-4 py-3 text-[13px] font-semibold text-purple">
+            Open the map <Icon name="external" size={14} />
           </a>
         </div>
       )}
-
-      {!attendance && (
-        <form action={joinEvent} className="flex flex-col gap-2 rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
-          <input type="hidden" name="slug" value={slug} />
-          <p className="text-sm font-medium">Going to this event?</p>
-          <p className="text-xs text-neutral-500">Join the event tab so others can see you are coming. Your contacts stay hidden. You check in at the venue.</p>
-          <button className="min-h-12 rounded-full bg-accent px-6 font-medium text-black" type="submit">Join this event</button>
-        </form>
-      )}
-
-      {attendance && !atVenue && (
-        <p className="rounded-2xl bg-neutral-100 p-3 text-sm dark:bg-neutral-900">You joined this event. Check in when you arrive at the venue.</p>
-      )}
-
-      {!atVenue && (
-        <div className="flex flex-col gap-3 rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
-          <p className="text-sm font-medium">At the venue? Scan the QR code on the screen to check in.</p>
-          <QrScanner slug={slug} />
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <details className="text-sm">
-            <summary className="cursor-pointer text-neutral-500">QR not working?</summary>
-            <form action={checkIn} className="mt-3 flex flex-col gap-2">
-              <p className="text-xs text-neutral-500">Ask the organiser for the check-in code and type it here.</p>
-              <input type="hidden" name="slug" value={slug} />
-              <input
-                name="code"
-                required
-                autoComplete="off"
-                autoCapitalize="characters"
-                placeholder="Check-in code"
-                className="min-h-12 rounded-xl border border-neutral-300 bg-transparent px-4 dark:border-neutral-700"
-              />
-              <button className="min-h-12 rounded-full border border-neutral-300 px-6 font-medium dark:border-neutral-700" type="submit">
-                Check in with code
-              </button>
-            </form>
-          </details>
-        </div>
-      )}
-
-      {atVenue && (
-        <form action={leaveEvent} className="flex items-center justify-between gap-3 rounded-2xl bg-green-100 p-3 dark:bg-green-900/40">
-          <input type="hidden" name="slug" value={slug} />
-          <p className="text-sm font-medium text-green-800 dark:text-green-300">You're checked in. Others can see you're here.</p>
-          <button className="min-h-11 shrink-0 rounded-full border border-green-800/30 px-4 text-sm font-medium text-green-800 dark:text-green-300" type="submit">
-            I left
-          </button>
-        </form>
-      )}
-
-      {attendance?.checkedInAt && badgeConfigured() && (
-        <div className="rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
-          {badge ? (
-            <>
-              <p className="text-sm font-medium">{badge.tokenId ? `Badge #${badge.tokenId} claimed.` : "Badge sent. Waiting for the chain to confirm."}</p>
-              <a href={txUrl(badge.txHash)} target="_blank" rel="noreferrer" className="text-sm underline">
-                View on BscScan
-              </a>
-            </>
-          ) : (
-            <form action={claimBadge} className="flex flex-col gap-2">
-              <p className="text-sm font-medium">Claim your attendance badge</p>
-              <p className="text-xs text-neutral-500">
-                A free, non-transferable badge on BNB testnet. We pay the gas. It only proves you were here.
-              </p>
-              <input type="hidden" name="slug" value={slug} />
-              <input
-                name="wallet"
-                required
-                defaultValue={me?.walletAddress ?? ""}
-                autoComplete="off"
-                autoCapitalize="none"
-                placeholder="Your wallet address (0x…)"
-                className="min-h-12 rounded-xl border border-neutral-300 bg-transparent px-4 text-sm dark:border-neutral-700"
-              />
-              {error && <p className="text-sm text-red-600">{error}</p>}
-              <button className="min-h-12 rounded-full bg-accent px-6 font-medium text-black" type="submit">
-                Claim badge
-              </button>
-            </form>
-          )}
-        </div>
-      )}
-
-      {attendance?.checkedInAt && <PeopleFeed eventId={event.id} endsAt={event.endsAt} base={`/events/${slug}`} meId={meId} tab={tab} admin={admin} filters={parseFilters(sp)} />}
-    </main>
+    </Screen>
   );
 }
 
 export default function EventPage(props: Props) {
   return (
-    <Suspense fallback={<p className="p-4 text-neutral-400">Loading…</p>}>
-      <EventView params={props.params} searchParams={props.searchParams} />
-    </Suspense>
+    <>
+      <BackBar href="/events" title="Event" />
+      <Suspense fallback={<p className="p-5 text-muted">Loading…</p>}>
+        <EventView params={props.params} searchParams={props.searchParams} />
+      </Suspense>
+    </>
   );
 }

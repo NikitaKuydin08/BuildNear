@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, inArray, isNotNull, lt, ne, or, sql } from "drizzle-orm";
 import { getDb } from "@/db";
-import { attendances, badges, events, introRequests, projects, users } from "@/db/schema";
+import { attendances, badges, events, introRequests, messages, projects, users } from "@/db/schema";
 import { contactLinks } from "@/lib/contacts";
 import { distanceKm, isFresh, LOCATION_TTL_MS, NEARBY_KM } from "@/lib/presence";
 
@@ -115,6 +115,10 @@ export async function listInbox(meId: string) {
       message: r.req.message,
       name: r.from.name,
       stack: r.from.stack,
+      userId: r.from.id,
+      photoAt: r.from.photoAt,
+      eventId: r.req.eventId,
+      at: r.req.respondedAt ?? r.req.createdAt,
       contact: reveal(r.req.status === "accepted", r.from),
     })),
     outgoing: out.map((r) => ({
@@ -123,6 +127,10 @@ export async function listInbox(meId: string) {
       message: r.req.message,
       name: r.to.name,
       stack: r.to.stack,
+      userId: r.to.id,
+      photoAt: r.to.photoAt,
+      eventId: r.req.eventId,
+      at: r.req.respondedAt ?? r.req.createdAt,
       contact: reveal(r.req.status === "accepted", r.to),
     })),
   };
@@ -246,4 +254,52 @@ export async function coAttendeesAcrossEvents(meId: string) {
     byUser.set(r.user.id, cur);
   }
   return [...byUser.values()];
+}
+
+// ---- Screen helpers for the redesign ----
+
+// How many people joined an event, and how many are checked in right now (not marked as left).
+export async function eventCounts(eventId: string) {
+  const [row] = await getDb()
+    .select({
+      joined: sql<number>`count(*)::int`,
+      here: sql<number>`count(*) filter (where ${attendances.checkedInAt} is not null and (${attendances.leftAt} is null or ${attendances.leftAt} < ${attendances.checkedInAt}))::int`,
+    })
+    .from(attendances)
+    .where(eq(attendances.eventId, eventId));
+  return { joined: Number(row?.joined ?? 0), here: Number(row?.here ?? 0) };
+}
+
+// The newest message of each conversation, for the connection list preview.
+export async function lastMessages(introIds: string[]) {
+  const out = new Map<string, { body: string; fromUserId: string; createdAt: Date }>();
+  if (introIds.length === 0) return out;
+  const rows = await getDb()
+    .selectDistinctOn([messages.introId], { introId: messages.introId, body: messages.body, fromUserId: messages.fromUserId, createdAt: messages.createdAt })
+    .from(messages)
+    .where(inArray(messages.introId, introIds))
+    .orderBy(messages.introId, desc(messages.createdAt));
+  for (const r of rows) out.set(r.introId, { body: r.body, fromUserId: r.fromUserId, createdAt: r.createdAt });
+  return out;
+}
+
+export async function eventTitles(ids: string[]) {
+  const out = new Map<string, string>();
+  const uniq = [...new Set(ids)];
+  if (uniq.length === 0) return out;
+  const rows = await getDb().select({ id: events.id, title: events.title }).from(events).where(inArray(events.id, uniq));
+  for (const r of rows) out.set(r.id, r.title);
+  return out;
+}
+
+// Checked-in events that have no on-chain badge yet: what the wallet claim screen can offer.
+export async function claimableEvents(userId: string) {
+  const rows = await getDb()
+    .select({ event: events, checkedInAt: attendances.checkedInAt, txHash: badges.txHash })
+    .from(attendances)
+    .innerJoin(events, eq(attendances.eventId, events.id))
+    .leftJoin(badges, and(eq(badges.eventId, events.id), eq(badges.userId, userId)))
+    .where(and(eq(attendances.userId, userId), isNotNull(attendances.checkedInAt)))
+    .orderBy(desc(attendances.checkedInAt));
+  return rows.filter((r) => !r.txHash).map((r) => r.event);
 }
