@@ -7,6 +7,7 @@ import { FIELD_KEYS, FIELDS } from "@/lib/fields";
 import { isAdminLogin } from "@/lib/organizer";
 import { getUser, listBadges, listProjects } from "@/lib/queries";
 import { requireUserId } from "@/lib/session";
+import { OtherProjects } from "@/components/OtherProjects";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { saveProfile } from "./actions";
 
@@ -37,7 +38,6 @@ async function ProfileForm({ searchParams }: { searchParams: PageProps<"/profile
 
   const proudest = mine.find((p) => p.featured) ?? null;
   const others = mine.filter((p) => !p.featured);
-  const otherSlots = [0, 1, 2].map((i) => others[i] ?? null);
   const chosen = new Set(me.topics);
   const extraTopics = me.topics.filter((t) => !FIELD_KEYS.includes(t));
 
@@ -119,9 +119,9 @@ async function ProfileForm({ searchParams }: { searchParams: PageProps<"/profile
           <h2 className="font-medium">Other projects</h2>
           <p className={hint}>Up to 3. They appear on your profile, below your proudest project.</p>
         </div>
-        {otherSlots.map((p, i) => (
-          <ProjectFields key={i} prefix={`o${i}`} p={p} />
-        ))}
+        <OtherProjects
+          initial={others.slice(0, 3).map((p) => ({ title: p.title, description: p.description, stack: p.stack.join(", "), url: p.url ?? "" }))}
+        />
       </section>
 
       <section className={card}>
