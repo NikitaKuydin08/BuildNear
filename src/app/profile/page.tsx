@@ -9,6 +9,7 @@ import { getUser, listBadges, listProjects } from "@/lib/queries";
 import { requireUserId } from "@/lib/session";
 import { OtherProjects } from "@/components/OtherProjects";
 import { PhotoUpload } from "@/components/PhotoUpload";
+import { ProudestProject } from "@/components/ProudestProject";
 import { saveProfile } from "./actions";
 
 const input = "min-h-12 w-full rounded-xl border border-neutral-300 bg-transparent px-4 dark:border-neutral-700";
@@ -16,19 +17,6 @@ const label = "flex flex-col gap-1 text-sm font-medium";
 const hint = "text-xs font-normal text-neutral-500";
 const card = "flex flex-col gap-3 rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800";
 const outlineBtn = "flex min-h-12 w-full items-center justify-center rounded-full border border-neutral-300 px-6 font-medium dark:border-neutral-700";
-
-type P = { title: string; description: string; stack: string[]; url: string | null } | null;
-
-function ProjectFields({ prefix, p }: { prefix: string; p: P }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <input name={`${prefix}title`} defaultValue={p?.title ?? ""} placeholder="Title" maxLength={60} className={input} />
-      <input name={`${prefix}desc`} defaultValue={p?.description ?? ""} placeholder="One line about it" maxLength={140} className={input} />
-      <input name={`${prefix}stack`} defaultValue={p?.stack.join(", ") ?? ""} placeholder="Stack (comma separated)" className={input} />
-      <input name={`${prefix}url`} defaultValue={p?.url ?? ""} placeholder="Link (optional, https://…)" autoCapitalize="none" className={input} />
-    </div>
-  );
-}
 
 async function ProfileForm({ searchParams }: { searchParams: PageProps<"/profile">["searchParams"] }) {
   const sp = await searchParams;
@@ -110,8 +98,9 @@ async function ProfileForm({ searchParams }: { searchParams: PageProps<"/profile
           <h2 className="font-medium">Your proudest project</h2>
           <p className={hint}>The one thing you want people to ask you about. It appears at the top of your profile and on your card.</p>
         </div>
-        <ProjectFields prefix="pf" p={proudest} />
-        <Link href="/profile/repos" className={`${outlineBtn} text-sm`}>Pick it from my GitHub repositories</Link>
+        <ProudestProject
+          initial={proudest ? { title: proudest.title, description: proudest.description, stack: proudest.stack.join(", "), url: proudest.url ?? "" } : null}
+        />
       </section>
 
       <section className={card}>
