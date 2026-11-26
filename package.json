@@ -19,7 +19,9 @@
     "brain:init": "node scripts/brain-init.mjs",
     "brain:sync": "tsx scripts/brain-sync.mts",
     "db:reset-badge": "tsx scripts/reset-badge.mts",
-    "test:qr": "tsx scripts/test-qr.mts"
+    "test:qr": "tsx scripts/test-qr.mts",
+    "db:clear": "tsx scripts/clear-data.mts",
+    "icons": "python3 scripts/make-icons.py"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.1",

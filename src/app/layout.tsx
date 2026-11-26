@@ -19,6 +19,7 @@ export const metadata: Metadata = {
   title: "BuildNear",
   description: "Find builders to talk to at events, cafes and co-working spaces.",
   appleWebApp: { capable: true, title: "BuildNear", statusBarStyle: "black-translucent" },
+  icons: { icon: "/icon-192.png", apple: "/apple-touch-icon.png" },
 };
 
 // Mobile-first: fill the phone screen, including the notch area.

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { InstallHint } from "@/components/InstallHint";
 import { listEventsFor } from "@/lib/queries";
 import { requireUserId } from "@/lib/session";
 
@@ -17,7 +18,7 @@ async function EventList() {
   const rows = await listEventsFor(userId);
 
   if (rows.length === 0) {
-    return <p className="text-neutral-500">No events yet. Run npm run db:seed for demo events.</p>;
+    return <p className="text-neutral-500">No events yet. Check back soon.</p>;
   }
 
   return (
@@ -45,6 +46,7 @@ export default function EventsPage() {
   return (
     <main className="flex flex-col gap-4 p-4">
       <h1 className="text-2xl font-semibold">Events</h1>
+      <InstallHint />
       <Suspense fallback={<p className="text-neutral-400">Loading…</p>}>
         <EventList />
       </Suspense>
