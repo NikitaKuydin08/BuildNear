@@ -33,7 +33,7 @@ export default function PrivacyPage() {
       <h2 className={h2}>Who else processes it</h2>
       <ul className="list-disc pl-5">
         <li className={li}><b>GitHub</b> (sign-in). <b>Vercel</b> (hosting). <b>Neon</b> (database, Singapore).</li>
-        <li className={li}><b>Living Brain</b> (optional smart matching): a short text summary of your profile (name, stack, interests, tags, meeting style, proudest project) may be sent to this service, which uses external AI processing. We never send contacts, location or wallet address. Copies there cannot be deleted automatically from this app; ask us and we will remove them.</li>
+        <li className={li}><b>Living Brain</b> (optional smart matching): a short text summary of your profile (name, stack, interests, tags, meeting style, proudest project) may be sent to this service, which uses external AI processing. When an intro is accepted, the two names, the event and the intro message (shortened) are sent too, so the Brain can remember why you met. Declined intros are never sent. We never send contacts, location or wallet address. Copies there cannot be deleted automatically from this app; ask us and we will remove them.</li>
         <li className={li}><b>BNB Smart Chain (testnet):</b> if you claim a badge, your wallet address and the badge are written to a public blockchain. Blockchain records are permanent and cannot be deleted by anyone, including us. Do not claim a badge if that is a problem.</li>
       </ul>
 

@@ -59,7 +59,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* Always dark, so the white iPhone status bar text stays readable in both themes. */}
         <header className="fixed inset-x-0 top-0 z-20 bg-[#0b0b0f] pt-[env(safe-area-inset-top)]">
           <div className="mx-auto flex h-12 max-w-md items-center justify-between px-4">
-            <Link href="/events" className="flex items-center gap-2 font-semibold text-white"><Mark />BuildNear</Link>
+            <Link href="/people" className="flex items-center gap-2 font-semibold text-white"><Mark />BuildNear</Link>
             <ThemeToggle />
           </div>
         </header>

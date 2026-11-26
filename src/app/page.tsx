@@ -37,6 +37,13 @@ export default function Home(props: PageProps<"/">) {
       <p className="text-neutral-500">
         Find builders to talk to at events, cafes and co-working spaces.
       </p>
+      <div className="max-w-xs rounded-2xl border border-neutral-200 p-3 text-left text-xs text-neutral-500 dark:border-neutral-800">
+        <p className="font-medium text-neutral-700 dark:text-neutral-300">What GitHub will ask, in plain words</p>
+        <p className="mt-1">
+          GitHub shows &quot;act on your behalf&quot; for every app. BuildNear is set up read-only: it reads your public profile (name, picture,
+          public repos) and, only if you choose them, the repos you share. It cannot post, push, star, comment or change anything on your account.
+        </p>
+      </div>
       <Suspense fallback={<p className="text-neutral-400">Loading…</p>}>
         <AuthPanel next={props.searchParams.then((sp) => sp.next)} />
       </Suspense>

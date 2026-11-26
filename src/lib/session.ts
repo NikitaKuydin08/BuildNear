@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 
 // Same-site relative paths only, so a forged "next" can't send people elsewhere.
-export function safePath(v: unknown, fallback = "/events") {
+export function safePath(v: unknown, fallback = "/people") {
   const s = String(v ?? "");
   return s.startsWith("/") && !s.startsWith("//") && !s.includes("\\") ? s : fallback;
 }

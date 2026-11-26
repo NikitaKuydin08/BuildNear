@@ -79,12 +79,15 @@ export async function syncProfile(u: BrainUser) {
   }
 }
 
-// Memory of a made connection (accepted intros only; declines are never stored).
-export async function recordConnection(a: BrainUser, b: BrainUser, eventTitle: string | null, requestId: string) {
+// Memory of a made connection (accepted intros only; declines are never stored). `reason` is the intro message = the stated goal.
+export async function recordConnection(a: BrainUser, b: BrainUser, eventTitle: string | null, requestId: string, reason?: string | null) {
   if (!brainEnabled()) return false;
   const content = `${a.name} (@${a.githubLogin}) and ${b.name} (@${b.githubLogin}) connected${
     eventTitle ? ` at ${eventTitle}` : ""
-  }. Shared ground: ${a.stack.filter((s) => b.stack.map((x) => x.toLowerCase()).includes(s.toLowerCase())).join(", ") || "different stacks"}.`;
+  }. Shared ground: ${a.stack.filter((s) => b.stack.map((x) => x.toLowerCase()).includes(s.toLowerCase())).join(", ") || "different stacks"}.${
+    // The sender's stated goal, kept short. Only for accepted intros, so both people have already seen it. Contacts are never included.
+    reason?.trim() ? ` Why they wanted to meet: "${reason.replace(/\s+/g, " ").trim().slice(0, 200)}"` : ""
+  }`;
   try {
     await (await client()).captures.capture(
       { brainId: process.env.LIVING_BRAIN_BRAIN_ID!, body: { kind: "note", bucket: "notes", label: "Connection", content, originRef: `intro:${requestId}` } },

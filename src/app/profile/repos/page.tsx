@@ -20,8 +20,9 @@ async function RepoList({ searchParams }: { searchParams: PageProps<"/profile/re
   if (!token) return <p className="text-sm text-neutral-500">{ERRORS.token}</p>;
 
   const { repos, hasInstallation } = await listMyRepos(me.githubLogin, token);
-  const slug = process.env.GITHUB_APP_SLUG;
-  const manage = slug ? `https://github.com/apps/${slug}/installations/new` : "https://github.com/settings/installations";
+  // The app's own install page, where the person picks which private repos to share. Slug = github.com/apps/<slug>.
+  const slug = process.env.GITHUB_APP_SLUG || "buildnear";
+  const manage = `https://github.com/apps/${slug}/installations/new`;
   const error = typeof sp.error === "string" ? ERRORS[sp.error] : undefined;
 
   return (

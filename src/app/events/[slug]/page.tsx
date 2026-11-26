@@ -1,20 +1,15 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { IntroControl } from "@/components/IntroControl";
-import { PersonCard } from "@/components/PersonCard";
-import { scorePair, type MeetPreference, type Person, type WorkStatus } from "@/lib/match";
+import { PeopleFeed, type Tab } from "@/components/PeopleFeed";
 import { badgeConfigured, txUrl } from "@/lib/chain";
-import { brainEnabled, brainPicks } from "@/lib/brain";
-import { rerankWithBrain } from "@/lib/rerank";
-import { featuredFor, getAttendance, getBadge, getEventBySlug, getUser, introStatesFor, listAttendees } from "@/lib/queries";
-import { isHere } from "@/lib/presence";
+import { brainEnabled } from "@/lib/brain";
+import { getAttendance, getBadge, getEventBySlug, getUser } from "@/lib/queries";
 import { requireUserId } from "@/lib/session";
 import { QrScanner } from "@/components/QrScanner";
 import { checkIn, claimBadge, leaveEvent } from "../actions";
 
 type Props = PageProps<"/events/[slug]">;
-type Tab = "everyone" | "for-you" | "brain";
 
 const ERRORS: Record<string, string> = {
   code: "That QR or code didn't work. Scan the live QR again, or type the code shown at the venue.",
@@ -24,22 +19,6 @@ const ERRORS: Record<string, string> = {
   notchecked: "Check in at the venue first, then claim your badge.",
   mint: "The badge couldn't be minted right now. Try again in a minute.",
 };
-
-function toPerson(u: {
-  stack: string[];
-  topics: string[];
-  tags: string[];
-  meetPreference: string;
-  workStatus: string | null;
-}): Person {
-  return {
-    stack: u.stack,
-    topics: u.topics,
-    tags: u.tags,
-    meetPreference: u.meetPreference as MeetPreference,
-    workStatus: u.workStatus as WorkStatus,
-  };
-}
 
 async function EventView({ params, searchParams }: { params: Props["params"]; searchParams: Props["searchParams"] }) {
   const { slug } = await params;
@@ -136,133 +115,8 @@ async function EventView({ params, searchParams }: { params: Props["params"]; se
         </div>
       )}
 
-      {attendance?.checkedInAt && (
-        <>
-          <div className="flex gap-2 rounded-full bg-neutral-100 p-1 dark:bg-neutral-900">
-            {[
-              { id: "everyone", label: "Everyone", href: `/events/${slug}` },
-              { id: "for-you", label: "For you", href: `/events/${slug}?tab=for-you` },
-              ...(brainEnabled() ? [{ id: "brain", label: "Brain", href: `/events/${slug}?tab=brain` }] : []),
-            ].map((t) => (
-              <Link
-                key={t.id}
-                href={t.href}
-                className={`flex min-h-10 flex-1 items-center justify-center rounded-full text-sm font-medium ${
-                  tab === t.id ? "bg-white shadow dark:bg-neutral-800" : "text-neutral-500"
-                }`}
-              >
-                {t.label}
-              </Link>
-            ))}
-          </div>
-
-          <Suspense fallback={<p className="text-neutral-400">Loading people…</p>}>
-            <Feed eventId={event.id} endsAt={event.endsAt} slug={slug} meId={meId} tab={tab} />
-          </Suspense>
-        </>
-      )}
+      {attendance?.checkedInAt && <PeopleFeed eventId={event.id} endsAt={event.endsAt} base={`/events/${slug}`} meId={meId} tab={tab} />}
     </main>
-  );
-}
-
-async function Feed({ eventId, endsAt, slug, meId, tab }: { eventId: string; endsAt: Date; slug: string; meId: string; tab: Tab }) {
-  const [me, rows] = await Promise.all([getUser(meId), listAttendees(eventId, meId)]);
-  if (rows.length === 0) return <p className="text-neutral-500">No one else has joined yet.</p>;
-  const ids = rows.map((r) => r.user.id);
-  const [states, projectsBy] = await Promise.all([introStatesFor(meId, ids), featuredFor(ids)]);
-  const back = `/events/${slug}${tab === "everyone" ? "" : `?tab=${tab}`}`;
-
-  if (tab === "brain" && me) {
-    const picks = await brainPicks(
-      me,
-      rows.map((r) => ({ id: r.user.id, name: r.user.name, githubLogin: r.user.githubLogin })),
-    );
-    if (!picks) {
-      return <p className="text-neutral-500">The Brain isn't reachable right now. The "For you" tab still works.</p>;
-    }
-    const known = rows
-      .filter((r) => picks.has(r.user.id))
-      .sort((a, b) => picks.get(b.user.id)!.similarity - picks.get(a.user.id)!.similarity);
-    if (known.length === 0) {
-      return (
-        <p className="text-neutral-500">
-          The Brain hasn't learned about the people here yet. New profiles take a minute or two to be understood.
-        </p>
-      );
-    }
-    return (
-      <ul className="flex flex-col gap-3">
-        {known.map(({ user, checkedInAt, leftAt }) => (
-          <PersonCard
-            key={user.id}
-            userId={user.id}
-            photoAt={user.photoAt}
-            name={user.name}
-            stack={user.stack}
-            topics={user.topics}
-            meetPreference={user.meetPreference as MeetPreference}
-            hereNow={isHere(checkedInAt, leftAt, endsAt)}
-            project={projectsBy.get(user.id)}
-            why={picks.get(user.id)!.why}
-            brainMatch={picks.get(user.id)!.similarity}
-          >
-            <IntroControl toUserId={user.id} back={back} state={states.get(user.id)} />
-          </PersonCard>
-        ))}
-      </ul>
-    );
-  }
-
-  if (tab === "for-you" && me) {
-    const mine = toPerson(me);
-    const plain = rows
-      .map((r) => ({ ...r, match: scorePair(mine, toPerson(r.user)) }))
-      .sort((a, b) => b.match.score - a.match.score);
-    // The Brain re-ranks the top few; if it is off or slow, the plain ranking is used as is.
-    const { list: ranked } = await rerankWithBrain(me, plain);
-    return (
-      <ul className="flex flex-col gap-3">
-        {ranked.map(({ user, checkedInAt, leftAt, match, brain, note }) => (
-          <PersonCard
-            key={user.id}
-            userId={user.id}
-            photoAt={user.photoAt}
-            name={user.name}
-            stack={user.stack}
-            topics={user.topics}
-            meetPreference={user.meetPreference as MeetPreference}
-            hereNow={isHere(checkedInAt, leftAt, endsAt)}
-            project={projectsBy.get(user.id)}
-            why={match.why}
-            action={match.action}
-            brainMatch={brain}
-            rankNote={note}
-          >
-            <IntroControl toUserId={user.id} back={back} state={states.get(user.id)} />
-          </PersonCard>
-        ))}
-      </ul>
-    );
-  }
-
-  return (
-    <ul className="flex flex-col gap-3">
-      {rows.map(({ user, checkedInAt, leftAt }) => (
-        <PersonCard
-          key={user.id}
-          userId={user.id}
-            photoAt={user.photoAt}
-            name={user.name}
-          stack={user.stack}
-          topics={user.topics}
-          meetPreference={user.meetPreference as MeetPreference}
-          hereNow={isHere(checkedInAt, leftAt, endsAt)}
-            project={projectsBy.get(user.id)}
-        >
-          <IntroControl toUserId={user.id} back={back} state={states.get(user.id)} />
-        </PersonCard>
-      ))}
-    </ul>
   );
 }
 

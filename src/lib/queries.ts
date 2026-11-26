@@ -31,6 +31,16 @@ export async function listEventsFor(userId: string) {
     .orderBy(asc(events.startsAt));
 }
 
+// Events I really checked in to, newest first. The home screen picks the one I am still at.
+export async function activeEventsFor(userId: string) {
+  return getDb()
+    .select({ event: events, checkedInAt: attendances.checkedInAt, leftAt: attendances.leftAt })
+    .from(attendances)
+    .innerJoin(events, eq(attendances.eventId, events.id))
+    .where(and(eq(attendances.userId, userId), isNotNull(attendances.checkedInAt)))
+    .orderBy(desc(attendances.checkedInAt));
+}
+
 // Everyone who joined the event (except me), people who are checked in first.
 export async function listAttendees(eventId: string, meId: string) {
   return getDb()

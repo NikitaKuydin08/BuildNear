@@ -41,8 +41,9 @@ export async function checkIn(formData: FormData) {
     const u = await getBrainUser(userId);
     if (u) await syncProfile(u);
   });
+  revalidatePath("/people");
   revalidatePath(`/events/${slug}`);
-  redirect(`/events/${slug}`);
+  redirect(`/people?event=${slug}`);
 }
 
 // "I left": stop showing as here now. Your check-in (and so your badge right) stays.

@@ -73,7 +73,7 @@ export async function respondIntro(formData: FormData) {
         const [ev] = await getDb().select().from(events).where(eq(events.id, req.eventId)).limit(1);
         title = ev?.title ?? null;
       }
-      if (a && b) await recordConnection(a, b, title, req.id);
+      if (a && b) await recordConnection(a, b, title, req.id, req.message);
     });
   }
   revalidatePath("/inbox");

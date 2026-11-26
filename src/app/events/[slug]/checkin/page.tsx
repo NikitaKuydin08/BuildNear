@@ -19,7 +19,7 @@ async function CheckInView({ params, searchParams }: { params: PageProps<"/event
   const attendance = await getAttendance(meId, event.id);
 
   const stillHere = !!attendance?.checkedInAt && !(attendance.leftAt && attendance.leftAt >= attendance.checkedInAt);
-  if (stillHere) redirect(`/events/${slug}`);
+  if (stillHere) redirect(`/people?event=${slug}`);
 
   return <AutoCheckIn action={checkIn} slug={slug} code={code} token={token} title={event.title} />;
 }
