@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { PeopleFeed, type Tab } from "@/components/PeopleFeed";
 import { badgeConfigured, txUrl } from "@/lib/chain";
 import { brainEnabled } from "@/lib/brain";
+import { isAdminUser } from "@/lib/organizer";
 import { getAttendance, getBadge, getEventBySlug, getUser } from "@/lib/queries";
 import { requireUserId } from "@/lib/session";
 import { QrScanner } from "@/components/QrScanner";
@@ -23,10 +24,11 @@ const ERRORS: Record<string, string> = {
 async function EventView({ params, searchParams }: { params: Props["params"]; searchParams: Props["searchParams"] }) {
   const { slug } = await params;
   const sp = await searchParams;
-  const tab: Tab = sp.tab === "for-you" ? "for-you" : sp.tab === "brain" && brainEnabled() ? "brain" : "everyone";
   const error = typeof sp.error === "string" ? ERRORS[sp.error] : undefined;
 
   const meId = await requireUserId();
+  const admin = await isAdminUser(meId);
+  const tab: Tab = sp.tab === "for-you" ? "for-you" : admin && sp.tab === "brain" && brainEnabled() ? "brain" : "everyone";
   const event = await getEventBySlug(slug);
   if (!event) notFound();
 
@@ -115,7 +117,7 @@ async function EventView({ params, searchParams }: { params: Props["params"]; se
         </div>
       )}
 
-      {attendance?.checkedInAt && <PeopleFeed eventId={event.id} endsAt={event.endsAt} base={`/events/${slug}`} meId={meId} tab={tab} />}
+      {attendance?.checkedInAt && <PeopleFeed eventId={event.id} endsAt={event.endsAt} base={`/events/${slug}`} meId={meId} tab={tab} admin={admin} />}
     </main>
   );
 }

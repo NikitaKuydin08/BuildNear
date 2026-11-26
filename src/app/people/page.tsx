@@ -1,8 +1,9 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { PeopleFeed, type Tab } from "@/components/PeopleFeed";
+import { AcrossFeed, PeopleFeed, type Tab } from "@/components/PeopleFeed";
 import { brainEnabled } from "@/lib/brain";
 import { isHere } from "@/lib/presence";
+import { isAdminUser } from "@/lib/organizer";
 import { activeEventsFor } from "@/lib/queries";
 import { requireUserId } from "@/lib/session";
 
@@ -10,11 +11,14 @@ import { requireUserId } from "@/lib/session";
 async function HomeView({ searchParams }: { searchParams: PageProps<"/people">["searchParams"] }) {
   const sp = await searchParams;
   const meId = await requireUserId("/people");
-  const tab: Tab = sp.tab === "for-you" ? "for-you" : sp.tab === "brain" && brainEnabled() ? "brain" : "everyone";
+  const admin = await isAdminUser(meId);
+  const tab: Tab = sp.tab === "for-you" ? "for-you" : admin && sp.tab === "brain" && brainEnabled() ? "brain" : admin && sp.tab === "across" && brainEnabled() ? "across" : "everyone";
 
-  const active = (await activeEventsFor(meId)).filter((r) => isHere(r.checkedInAt, r.leftAt, r.event.endsAt));
+  const past = await activeEventsFor(meId);
+  const active = past.filter((r) => isHere(r.checkedInAt, r.leftAt, r.event.endsAt));
   if (active.length === 0) {
     return (
+      <>
       <div className="flex flex-col gap-3 rounded-2xl border border-neutral-200 p-5 dark:border-neutral-800">
         <p className="font-medium">You are not checked in anywhere yet.</p>
         <p className="text-sm text-neutral-500">
@@ -24,6 +28,18 @@ async function HomeView({ searchParams }: { searchParams: PageProps<"/people">["
           See events
         </Link>
       </div>
+      {admin && past.length > 0 && brainEnabled() && (
+        <>
+          <div>
+            <h2 className="text-lg font-semibold">From your past events</h2>
+            <p className="text-sm text-neutral-500">People from events you checked in to, matched to you by the Brain. You can still ask for an intro.</p>
+          </div>
+          <Suspense fallback={<p className="text-neutral-400">Loading people…</p>}>
+            <AcrossFeed meId={meId} back="/people" />
+          </Suspense>
+        </>
+      )}
+      </>
     );
   }
 
@@ -53,7 +69,7 @@ async function HomeView({ searchParams }: { searchParams: PageProps<"/people">["
           ))}
         </div>
       )}
-      <PeopleFeed eventId={event.id} endsAt={event.endsAt} base={base} meId={meId} tab={tab} />
+      <PeopleFeed eventId={event.id} endsAt={event.endsAt} base={base} meId={meId} tab={tab} admin={admin} />
     </>
   );
 }

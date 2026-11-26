@@ -21,3 +21,9 @@ export async function requireAdmin(next: string) {
   if (!user || !isAdminLogin(user.githubLogin)) notFound();
   return userId;
 }
+
+// For showing or hiding Brain details (tabs, scores). Never throws; a missing user is simply not an admin.
+export async function isAdminUser(userId: string) {
+  const user = await getUser(userId);
+  return !!user && isAdminLogin(user.githubLogin);
+}

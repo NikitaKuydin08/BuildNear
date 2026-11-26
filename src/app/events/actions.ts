@@ -8,7 +8,7 @@ import { getDb } from "@/db";
 import { attendances, badges, users } from "@/db/schema";
 import { isMinterAddress, isWallet, mintBadge } from "@/lib/chain";
 import { verifyToken } from "@/lib/qr-token";
-import { syncProfile } from "@/lib/brain";
+import { recordCheckIn, syncProfile } from "@/lib/brain";
 import { getBadge, getBrainUser, getEventBySlug } from "@/lib/queries";
 import { requireUserId } from "@/lib/session";
 
@@ -39,7 +39,10 @@ export async function checkIn(formData: FormData) {
   // Make sure the Brain knows this person before others look for matches (deduplicated by profile hash).
   after(async () => {
     const u = await getBrainUser(userId);
-    if (u) await syncProfile(u);
+    if (u) {
+      await syncProfile(u);
+      await recordCheckIn(u, event.title, event.id);
+    }
   });
   revalidatePath("/people");
   revalidatePath(`/events/${slug}`);

@@ -22,6 +22,8 @@ export type PersonCardProps = {
   rankNote?: string;
   project?: { title: string; description: string; url: string | null } | null;
   distance?: string;
+  // Small line under the topics, e.g. which events you share.
+  note?: string;
   children?: React.ReactNode;
 };
 
@@ -72,6 +74,8 @@ export function PersonCard(p: PersonCardProps) {
       {p.topics.length > 0 && (
         <p className="mt-2 text-xs text-neutral-500">Into: {p.topics.slice(0, 4).join(", ")}</p>
       )}
+
+      {p.note && <p className="mt-1 text-xs text-neutral-500">{p.note}</p>}
 
       {p.project && (
         <div className="mt-3 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">

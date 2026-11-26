@@ -6,7 +6,7 @@ import { events } from "@/db/schema";
 import { BADGE_FIELDS } from "@/lib/badge-levels";
 import { requireAdmin } from "@/lib/organizer";
 import { EventTimes } from "@/components/DateTimeField";
-import { createEvent } from "./actions";
+import { createEvent, setEventField } from "./actions";
 
 const input = "min-h-12 w-full rounded-xl border border-neutral-300 bg-transparent px-4 dark:border-neutral-700";
 const fmt = (d: Date) => d.toLocaleString("en-GB", { timeZone: "Asia/Bangkok", dateStyle: "medium", timeStyle: "short" });
@@ -32,6 +32,7 @@ async function AdminView({ searchParams }: { searchParams: PageProps<"/admin/eve
         </label>
         <label className="flex flex-col gap-1 text-sm font-medium">Luma link (optional)<input name="lumaUrl" type="url" className={input} /></label>
         {sp.error && <p className="text-sm text-red-600">Check the fields. The end must be after the start.</p>}
+        {sp.updated && <p className="text-sm text-green-700 dark:text-green-400">Badge field updated.</p>}
         {sp.created && <p className="text-sm text-green-700 dark:text-green-400">Event created.</p>}
         <button className="min-h-12 rounded-full bg-accent px-6 font-medium text-black" type="submit">Create event</button>
       </form>
@@ -43,7 +44,14 @@ async function AdminView({ searchParams }: { searchParams: PageProps<"/admin/eve
             <li key={e.id} className="rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
               <p className="font-medium">{e.title}</p>
               <p className="text-xs text-neutral-500">{e.venue} · {fmt(e.startsAt)} to {fmt(e.endsAt)}</p>
-              <p className="text-xs text-neutral-500">Badge field: {BADGE_FIELDS.find((f) => f.key === e.field)?.label ?? "none"}</p>
+              <form action={setEventField} className="mt-2 flex gap-2">
+                <input type="hidden" name="id" value={e.id} />
+                <select name="field" defaultValue={e.field ?? ""} aria-label="Badge field" className="min-h-11 flex-1 rounded-xl border border-neutral-300 bg-transparent px-3 text-sm dark:border-neutral-700">
+                  <option value="">No field badge</option>
+                  {BADGE_FIELDS.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
+                </select>
+                <button type="submit" className="min-h-11 rounded-full border border-neutral-300 px-4 text-sm font-medium dark:border-neutral-700">Save</button>
+              </form>
               <p className="mt-1 text-xs text-neutral-500">Typed code: <span className="font-mono">{e.checkInCode}</span></p>
               <Link href={`/events/${e.slug}/qr`} className="mt-3 flex min-h-11 items-center justify-center rounded-full bg-accent px-4 text-sm font-medium text-black">
                 Show check-in QR
@@ -60,6 +68,7 @@ export default function AdminEventsPage(props: PageProps<"/admin/events">) {
   return (
     <main className="flex flex-col gap-4 p-4">
       <h1 className="text-2xl font-semibold">Organizer: events</h1>
+      <Link href="/admin/evaluation" className="text-sm underline">Brain evaluation (admin)</Link>
       <Suspense fallback={<p className="text-neutral-400">Loading…</p>}>
         <AdminView searchParams={props.searchParams} />
       </Suspense>

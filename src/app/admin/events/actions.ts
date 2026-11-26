@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
+import { eq } from "drizzle-orm";
 import { events } from "@/db/schema";
 import { BADGE_FIELDS } from "@/lib/badge-levels";
 import { requireAdmin } from "@/lib/organizer";
@@ -40,4 +41,17 @@ export async function createEvent(formData: FormData) {
   await getDb().insert(events).values({ slug: slugify(title), title, venue, startsAt, endsAt, checkInCode, lumaUrl, field });
   revalidatePath("/events");
   redirect(`${back}created=1`);
+}
+
+// Change which badge field an existing event counts toward (or none). Admin only; the value is validated.
+export async function setEventField(formData: FormData) {
+  await requireAdmin("/admin/events");
+  const id = String(formData.get("id") ?? "");
+  const fieldRaw = String(formData.get("field") ?? "");
+  const field = BADGE_FIELDS.some((f) => f.key === fieldRaw) ? fieldRaw : null;
+  if (!/^[0-9a-f-]{36}$/i.test(id)) redirect("/admin/events?error=1");
+  await getDb().update(events).set({ field }).where(eq(events.id, id));
+  revalidatePath("/events");
+  revalidatePath("/profile");
+  redirect("/admin/events?updated=1");
 }

@@ -6,9 +6,9 @@ import { brainEnabled, brainPicks } from "@/lib/brain";
 import { scorePair, type MeetPreference, type Person, type WorkStatus } from "@/lib/match";
 import { isHere } from "@/lib/presence";
 import { rerankWithBrain } from "@/lib/rerank";
-import { featuredFor, getUser, introStatesFor, listAttendees } from "@/lib/queries";
+import { coAttendeesAcrossEvents, featuredFor, getUser, introStatesFor, listAttendees } from "@/lib/queries";
 
-export type Tab = "everyone" | "for-you" | "brain";
+export type Tab = "everyone" | "for-you" | "brain" | "across";
 
 // `base` is the page this feed lives on, e.g. "/events/<slug>" or "/people?event=<slug>".
 export function tabHref(base: string, tab: Tab) {
@@ -33,11 +33,17 @@ function toPerson(u: {
 }
 
 // Everyone / For you / Brain for one event. Shared by the home screen and the event page.
-export function PeopleFeed({ eventId, endsAt, base, meId, tab }: { eventId: string; endsAt: Date; base: string; meId: string; tab: Tab }) {
+// Brain details (Brain / Across events tabs, Brain scores) are for admins only: the Brain still works quietly inside "For you" for everyone.
+export function PeopleFeed({ eventId, endsAt, base, meId, tab, admin = false }: { eventId: string; endsAt: Date; base: string; meId: string; tab: Tab; admin?: boolean }) {
   const tabs: { id: Tab; label: string }[] = [
     { id: "everyone", label: "Everyone" },
     { id: "for-you", label: "For you" },
-    ...(brainEnabled() ? [{ id: "brain" as Tab, label: "Brain" }] : []),
+    ...(admin && brainEnabled()
+      ? [
+          { id: "brain" as Tab, label: "Brain" },
+          { id: "across" as Tab, label: "Across events" },
+        ]
+      : []),
   ];
   return (
     <>
@@ -55,13 +61,14 @@ export function PeopleFeed({ eventId, endsAt, base, meId, tab }: { eventId: stri
         ))}
       </div>
       <Suspense fallback={<p className="text-neutral-400">Loading people…</p>}>
-        <Feed eventId={eventId} endsAt={endsAt} base={base} meId={meId} tab={tab} />
+        <Feed eventId={eventId} endsAt={endsAt} base={base} meId={meId} tab={tab} admin={admin} />
       </Suspense>
     </>
   );
 }
 
-async function Feed({ eventId, endsAt, base, meId, tab }: { eventId: string; endsAt: Date; base: string; meId: string; tab: Tab }) {
+async function Feed({ eventId, endsAt, base, meId, tab, admin }: { eventId: string; endsAt: Date; base: string; meId: string; tab: Tab; admin: boolean }) {
+  if (tab === "across" && admin) return <AcrossFeed meId={meId} back={tabHref(base, tab)} />;
   const [me, rows] = await Promise.all([getUser(meId), listAttendees(eventId, meId)]);
   if (rows.length === 0) return <p className="text-neutral-500">No one else has checked in yet.</p>;
   const ids = rows.map((r) => r.user.id);
@@ -70,7 +77,7 @@ async function Feed({ eventId, endsAt, base, meId, tab }: { eventId: string; end
 
   // The Brain tab only uses the Brain for the similarity score. The text shown comes from our own profile data:
   // the Brain's page summaries can mention who connected with whom, which must never be shown to other people.
-  if (tab === "brain" && me) {
+  if (tab === "brain" && me && admin) {
     const picks = await brainPicks(
       me,
       rows.map((r) => ({ id: r.user.id, name: r.user.name, githubLogin: r.user.githubLogin })),
@@ -117,7 +124,7 @@ async function Feed({ eventId, endsAt, base, meId, tab }: { eventId: string; end
       .map((r) => ({ ...r, match: scorePair(mine, toPerson(r.user)) }))
       .sort((a, b) => b.match.score - a.match.score);
     // The Brain re-ranks the top few; if it is off or slow, the plain ranking is used as is.
-    const { list: ranked } = await rerankWithBrain(me, plain);
+    const { list: ranked } = await rerankWithBrain(me, plain, 8, { eventId });
     return (
       <ul className="flex flex-col gap-3">
         {ranked.map(({ user, checkedInAt, leftAt, match, brain, note }) => (
@@ -133,8 +140,8 @@ async function Feed({ eventId, endsAt, base, meId, tab }: { eventId: string; end
             project={projectsBy.get(user.id)}
             why={match.why}
             action={match.action}
-            brainMatch={brain}
-            rankNote={note}
+            brainMatch={admin ? brain : undefined}
+            rankNote={admin ? note : undefined}
           >
             <IntroControl toUserId={user.id} back={back} state={states.get(user.id)} />
           </PersonCard>
@@ -164,3 +171,49 @@ async function Feed({ eventId, endsAt, base, meId, tab }: { eventId: string; end
   );
 }
 
+
+// People from every event I checked in to, ranked only by the Brain's similarity. This is how the Brain connects people
+// beyond one venue or one day. Same privacy circle as an event page: only people who were checked in at an event I was at.
+// The text shown comes from our own profile data, never from the Brain's summaries (they can mention who met whom).
+export async function AcrossFeed({ meId, back }: { meId: string; back: string }) {
+  const [me, rows] = await Promise.all([getUser(meId), coAttendeesAcrossEvents(meId)]);
+  if (!me) return null;
+  if (rows.length === 0) {
+    return <p className="text-neutral-500">No one from your events yet. Check in to an event and they will show up here.</p>;
+  }
+  const picks = await brainPicks(
+    me,
+    rows.map((r) => ({ id: r.user.id, name: r.user.name, githubLogin: r.user.githubLogin })),
+  );
+  if (!picks) return <p className="text-neutral-500">The Brain isn't reachable right now. Try again in a minute.</p>;
+  const known = rows
+    .filter((r) => picks.has(r.user.id))
+    .sort((a, b) => picks.get(b.user.id)!.similarity - picks.get(a.user.id)!.similarity);
+  if (known.length === 0) {
+    return <p className="text-neutral-500">The Brain hasn't learned about these people yet. New profiles take a minute or two to be understood.</p>;
+  }
+  const ids = known.map((r) => r.user.id);
+  const [states, projectsBy] = await Promise.all([introStatesFor(meId, ids), featuredFor(ids)]);
+  return (
+    <ul className="flex flex-col gap-3">
+      {known.map(({ user, titles }) => (
+        <PersonCard
+          key={user.id}
+          userId={user.id}
+          photoAt={user.photoAt}
+          name={user.name}
+          stack={user.stack}
+          topics={user.topics}
+          meetPreference={user.meetPreference as MeetPreference}
+          hereNow={false}
+          project={projectsBy.get(user.id)}
+          why={scorePair(toPerson(me), toPerson(user)).why}
+          brainMatch={picks.get(user.id)!.similarity}
+          note={`Also at ${titles.join(", ")}`}
+        >
+          <IntroControl toUserId={user.id} back={back} state={states.get(user.id)} />
+        </PersonCard>
+      ))}
+    </ul>
+  );
+}

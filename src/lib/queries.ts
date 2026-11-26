@@ -211,3 +211,28 @@ export async function canConnect(meId: string, otherId: string) {
   const near = bothFresh && distanceKm(a.locationLat!, a.locationLon!, b.locationLat!, b.locationLon!) <= NEARBY_KM;
   return { allowed: !!near, eventId: null };
 }
+
+// People who checked in to any event I also checked in to (never strangers), with the event titles they share with me.
+// Same visibility circle as an event page, just across all of my events.
+export async function coAttendeesAcrossEvents(meId: string) {
+  const db = getDb();
+  const mine = await db
+    .select({ e: attendances.eventId })
+    .from(attendances)
+    .where(and(eq(attendances.userId, meId), isNotNull(attendances.checkedInAt)));
+  if (mine.length === 0) return [];
+  const rows = await db
+    .select({ user: users, title: events.title, at: attendances.checkedInAt })
+    .from(attendances)
+    .innerJoin(users, eq(attendances.userId, users.id))
+    .innerJoin(events, eq(attendances.eventId, events.id))
+    .where(and(inArray(attendances.eventId, mine.map((m) => m.e)), ne(attendances.userId, meId), isNotNull(attendances.checkedInAt)))
+    .orderBy(desc(attendances.checkedInAt));
+  const byUser = new Map<string, { user: (typeof rows)[number]["user"]; titles: string[] }>();
+  for (const r of rows) {
+    const cur = byUser.get(r.user.id) ?? { user: r.user, titles: [] };
+    if (!cur.titles.includes(r.title)) cur.titles.push(r.title);
+    byUser.set(r.user.id, cur);
+  }
+  return [...byUser.values()];
+}

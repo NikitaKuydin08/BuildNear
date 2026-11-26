@@ -100,6 +100,22 @@ export async function recordConnection(a: BrainUser, b: BrainUser, eventTitle: s
   }
 }
 
+// Memory of "who was at which event". Only the fact of a venue check-in, never a time, place or position.
+export async function recordCheckIn(u: BrainUser, eventTitle: string, eventId: string) {
+  if (!brainEnabled()) return false;
+  const content = `${u.name} (@${u.githubLogin}) checked in at ${eventTitle}.`;
+  try {
+    await (await client()).captures.capture(
+      { brainId: process.env.LIVING_BRAIN_BRAIN_ID!, body: { kind: "note", bucket: "notes", label: "Event check-in", content, originRef: `checkin:${u.id}:${eventId}` } },
+      TIMEOUT,
+    );
+    return true;
+  } catch (e) {
+    console.error("brain check-in capture failed:", e instanceof Error ? e.message : e);
+    return false;
+  }
+}
+
 export type BrainPick = { similarity: number; why: string };
 
 // Ask the Brain who is closest to me. Returns a map userId -> pick for people the Brain already knows,

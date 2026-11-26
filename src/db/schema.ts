@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, primaryKey, unique, doublePrecision, boolean } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, primaryKey, unique, doublePrecision, boolean, integer } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 // Structured data lives here. The Living Brain stores judgments and reasons, not these rows.
@@ -107,4 +107,19 @@ export const projects = pgTable("projects", {
 export const userPhotos = pgTable("user_photos", {
   userId: uuid("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
   data: text("data").notNull(),
+});
+
+// Evidence for the admin evaluation panel: every time the Brain re-ranks someone's "For you" feed, one row per re-ranked person.
+// plainRank = position before the Brain, finalRank = position the user saw. Ranks start at 1. brainMs = how long the Brain call took.
+export const rankingLogs = pgTable("ranking_logs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  candidateId: uuid("candidate_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  eventId: uuid("event_id").references(() => events.id, { onDelete: "set null" }),
+  plainRank: integer("plain_rank").notNull(),
+  finalRank: integer("final_rank").notNull(),
+  brainSimilarity: doublePrecision("brain_similarity"),
+  brainMs: integer("brain_ms").notNull(),
+  reason: text("reason").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
