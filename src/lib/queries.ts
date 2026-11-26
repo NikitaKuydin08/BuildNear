@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, ne, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, ne, or, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { attendances, badges, events, introRequests, projects, users } from "@/db/schema";
 import { contactLinks } from "@/lib/contacts";
@@ -134,6 +134,17 @@ export async function listBadges(userId: string) {
     .innerJoin(events, eq(badges.eventId, events.id))
     .where(eq(badges.userId, userId))
     .orderBy(desc(badges.createdAt));
+}
+
+// Events a person really checked in to, grouped by the event's field. Drives the leveled field badges.
+export async function fieldProgress(userId: string) {
+  const rows = await getDb()
+    .select({ field: events.field, n: sql<number>`count(distinct ${attendances.eventId})::int` })
+    .from(attendances)
+    .innerJoin(events, eq(attendances.eventId, events.id))
+    .where(and(eq(attendances.userId, userId), isNotNull(attendances.checkedInAt), isNotNull(events.field)))
+    .groupBy(events.field);
+  return rows.map((r) => ({ field: r.field as string, count: Number(r.n) }));
 }
 
 // ---- Projects ----

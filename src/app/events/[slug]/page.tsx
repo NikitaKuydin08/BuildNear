@@ -6,6 +6,7 @@ import { PersonCard } from "@/components/PersonCard";
 import { scorePair, type MeetPreference, type Person, type WorkStatus } from "@/lib/match";
 import { badgeConfigured, txUrl } from "@/lib/chain";
 import { brainEnabled, brainPicks } from "@/lib/brain";
+import { rerankWithBrain } from "@/lib/rerank";
 import { featuredFor, getAttendance, getBadge, getEventBySlug, getUser, introStatesFor, listAttendees } from "@/lib/queries";
 import { isHere } from "@/lib/presence";
 import { requireUserId } from "@/lib/session";
@@ -223,12 +224,14 @@ async function Feed({ eventId, endsAt, slug, meId, tab }: { eventId: string; end
 
   if (tab === "for-you" && me) {
     const mine = toPerson(me);
-    const ranked = rows
+    const plain = rows
       .map((r) => ({ ...r, match: scorePair(mine, toPerson(r.user)) }))
       .sort((a, b) => b.match.score - a.match.score);
+    // The Brain re-ranks the top few; if it is off or slow, the plain ranking is used as is.
+    const { list: ranked } = await rerankWithBrain(me, plain);
     return (
       <ul className="flex flex-col gap-3">
-        {ranked.map(({ user, checkedInAt, leftAt, match }) => (
+        {ranked.map(({ user, checkedInAt, leftAt, match, brain, note }) => (
           <PersonCard
             key={user.id}
             userId={user.id}
@@ -241,6 +244,8 @@ async function Feed({ eventId, endsAt, slug, meId, tab }: { eventId: string; end
             project={projectsBy.get(user.id)}
             why={match.why}
             action={match.action}
+            brainMatch={brain}
+            rankNote={note}
           >
             <IntroControl toUserId={user.id} back={back} state={states.get(user.id)} />
           </PersonCard>

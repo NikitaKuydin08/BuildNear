@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 150" role="img" aria-labelledby="badge-title">
+  <title id="badge-title">Cloud · Explorer</title>
+  <style>
+    svg {
+      --enamel-light: #536b83;
+      --enamel-shade: #283748;
+      --symbol-light: #e0e9f3;
+      --symbol-shade: #819ab2;
+      --champagne-light: #fff0d5;
+      --champagne-mid: #d5a879;
+      --champagne-edge: #a77b57;
+      --bookmark: #141116;
+    }
+  </style>
+  <defs>
+    <linearGradient id="metal" x2=".22" y2="1">
+      <stop stop-color="var(--champagne-light)"/>
+      <stop offset=".32" stop-color="var(--champagne-mid)"/>
+      <stop offset=".65" stop-color="var(--champagne-light)"/>
+      <stop offset="1" stop-color="var(--champagne-edge)"/>
+    </linearGradient>
+    <linearGradient id="enamel" x2=".35" y2="1">
+      <stop stop-color="var(--enamel-light)"/>
+      <stop offset="1" stop-color="var(--enamel-shade)"/>
+    </linearGradient>
+    <linearGradient id="symbol" x2=".3" y2="1">
+      <stop stop-color="var(--symbol-light)"/>
+      <stop offset="1" stop-color="var(--symbol-shade)"/>
+    </linearGradient>
+    <linearGradient id="feather" x2=".75" y2="1">
+      <stop stop-color="var(--symbol-light)"/>
+      <stop offset=".5" stop-color="var(--symbol-shade)"/>
+      <stop offset="1" stop-color="var(--enamel-light)"/>
+    </linearGradient>
+  </defs>
+  <g id="pin">
+    <rect x="36" y="37" width="108" height="101" rx="24" fill="#513427"/>
+    <rect x="36" y="34" width="108" height="101" rx="24" fill="url(#metal)" stroke="var(--champagne-edge)" stroke-width="1"/>
+    <rect x="40" y="38" width="100" height="93" rx="20" fill="none" stroke="var(--champagne-light)" stroke-width="1"/>
+    <rect x="42" y="40" width="96" height="89" rx="19" fill="url(#enamel)" stroke="var(--enamel-shade)" stroke-width="1.5"/>
+  </g>
+  <g id="track-symbol" stroke-linejoin="round">
+<path fill="url(#symbol)" d="M69 98a12 12 0 0 1-1-24 18 18 0 0 1 35 1 12 12 0 1 1 5 23Z"/>
+  </g>
+<path id="bookmark" d="M52 34h18q3 0 3 3v30q0 3-3 2l-9-8-9 8q-3 1-3-2V37q0-3 3-3Z"
+      fill="var(--bookmark)" stroke="url(#metal)" stroke-width="2.2" stroke-linejoin="round"/>
+</svg>

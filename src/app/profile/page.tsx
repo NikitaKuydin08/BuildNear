@@ -5,7 +5,8 @@ import { DeleteAccountButton } from "@/components/DeleteAccountButton";
 import { txUrl } from "@/lib/chain";
 import { FIELD_KEYS, FIELDS } from "@/lib/fields";
 import { isAdminLogin } from "@/lib/organizer";
-import { getUser, listBadges, listProjects } from "@/lib/queries";
+import { BadgeShelf } from "@/components/BadgeShelf";
+import { fieldProgress, getUser, listBadges, listProjects } from "@/lib/queries";
 import { requireUserId } from "@/lib/session";
 import { OtherProjects } from "@/components/OtherProjects";
 import { PhotoUpload } from "@/components/PhotoUpload";
@@ -140,19 +141,25 @@ async function AdminLink() {
 
 async function Badges() {
   const userId = await requireUserId();
-  const rows = await listBadges(userId);
-  if (rows.length === 0) return null;
+  const [rows, progress] = await Promise.all([listBadges(userId), fieldProgress(userId)]);
+  if (rows.length === 0 && progress.length === 0) return null;
   return (
-    <section className="flex flex-col gap-2">
+    <section className="flex flex-col gap-3">
       <h2 className="font-medium">Your badges</h2>
-      <ul className="flex flex-col gap-2">
-        {rows.map(({ badge, event }) => (
-          <li key={event.id} className="flex items-center justify-between rounded-2xl border border-neutral-200 p-3 dark:border-neutral-800">
-            <span className="text-sm font-medium">{event.title}</span>
-            <a href={txUrl(badge.txHash)} target="_blank" rel="noreferrer" className="text-sm underline">BscScan</a>
-          </li>
-        ))}
-      </ul>
+      <BadgeShelf rows={progress} showNext />
+      {rows.length > 0 && (
+        <>
+          <p className="text-xs uppercase tracking-wide text-neutral-500">Event badges on BNB chain</p>
+          <ul className="flex flex-col gap-2">
+            {rows.map(({ badge, event }) => (
+              <li key={event.id} className="flex items-center justify-between rounded-2xl border border-neutral-200 p-3 dark:border-neutral-800">
+                <span className="text-sm font-medium">{event.title}</span>
+                <a href={txUrl(badge.txHash)} target="_blank" rel="noreferrer" className="text-sm underline">BscScan</a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </section>
   );
 }

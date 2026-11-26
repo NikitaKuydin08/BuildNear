@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { events } from "@/db/schema";
+import { BADGE_FIELDS } from "@/lib/badge-levels";
 import { requireAdmin } from "@/lib/organizer";
 
 function slugify(title: string) {
@@ -26,6 +27,8 @@ export async function createEvent(formData: FormData) {
   const startsAt = bangkok(String(formData.get("startsAt") ?? ""));
   const endsAt = bangkok(String(formData.get("endsAt") ?? ""));
   const luma = String(formData.get("lumaUrl") ?? "").trim();
+  const fieldRaw = String(formData.get("field") ?? "");
+  const field = BADGE_FIELDS.some((f) => f.key === fieldRaw) ? fieldRaw : null;
   const back = "/admin/events?";
 
   if (!title || !venue || !startsAt || !endsAt || endsAt <= startsAt) redirect(`${back}error=1`);
@@ -34,7 +37,7 @@ export async function createEvent(formData: FormData) {
   const lumaUrl = /^https?:\/\//i.test(luma) ? luma.slice(0, 300) : null;
   const checkInCode = randomBytes(3).toString("hex").toUpperCase();
 
-  await getDb().insert(events).values({ slug: slugify(title), title, venue, startsAt, endsAt, checkInCode, lumaUrl });
+  await getDb().insert(events).values({ slug: slugify(title), title, venue, startsAt, endsAt, checkInCode, lumaUrl, field });
   revalidatePath("/events");
   redirect(`${back}created=1`);
 }

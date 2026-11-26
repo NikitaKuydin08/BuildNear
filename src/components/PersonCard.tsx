@@ -19,6 +19,7 @@ export type PersonCardProps = {
   why?: string;
   action?: "meet" | "chat";
   brainMatch?: number;
+  rankNote?: string;
   project?: { title: string; description: string; url: string | null } | null;
   distance?: string;
   children?: React.ReactNode;
@@ -89,6 +90,7 @@ export function PersonCard(p: PersonCardProps) {
         <p className="mt-3 rounded-xl bg-neutral-50 p-3 text-sm dark:bg-neutral-900">
           {p.action && <span className="font-medium">{p.action === "chat" ? "Chat first. " : "Worth meeting. "}</span>}
           {p.why}
+          {p.rankNote && <span className="mt-1 block text-xs text-neutral-500">{p.rankNote}</span>}
         </p>
       )}
 

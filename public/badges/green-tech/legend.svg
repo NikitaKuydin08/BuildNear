@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 150" role="img" aria-labelledby="badge-title">
+  <title id="badge-title">Green Tech · Legend</title>
+  <style>
+    svg {
+      --enamel-light: #6d7751;
+      --enamel-shade: #343f28;
+      --symbol-light: #e5ebc8;
+      --symbol-shade: #a2ae79;
+      --champagne-light: #fff0d5;
+      --champagne-mid: #d5a879;
+      --champagne-edge: #a77b57;
+      --bookmark: #141116;
+    }
+  </style>
+  <defs>
+    <linearGradient id="metal" x2=".22" y2="1">
+      <stop stop-color="var(--champagne-light)"/>
+      <stop offset=".32" stop-color="var(--champagne-mid)"/>
+      <stop offset=".65" stop-color="var(--champagne-light)"/>
+      <stop offset="1" stop-color="var(--champagne-edge)"/>
+    </linearGradient>
+    <linearGradient id="enamel" x2=".35" y2="1">
+      <stop stop-color="var(--enamel-light)"/>
+      <stop offset="1" stop-color="var(--enamel-shade)"/>
+    </linearGradient>
+    <linearGradient id="symbol" x2=".3" y2="1">
+      <stop stop-color="var(--symbol-light)"/>
+      <stop offset="1" stop-color="var(--symbol-shade)"/>
+    </linearGradient>
+    <linearGradient id="feather" x2=".75" y2="1">
+      <stop stop-color="var(--symbol-light)"/>
+      <stop offset=".5" stop-color="var(--symbol-shade)"/>
+      <stop offset="1" stop-color="var(--enamel-light)"/>
+    </linearGradient>
+  </defs>
+  <g id="wings" fill="url(#feather)" stroke="var(--champagne-edge)" stroke-width="1" stroke-linejoin="round">
+    <g id="left-wing">
+<path d="M48 94C23 77 4 47 18 20c2-4 5-4 5 1-1 22 9 35 27 52Z"/>
+<path d="M48 107C21 99 5 80 5 61c0-4 3-5 5-1 10 16 24 24 40 31Z"/>
+<path d="M48 120C29 117 14 107 11 94c-1-4 1-5 4-3 11 10 22 13 35 16Z"/>
+<path d="M49 128c-13 1-24-5-27-11-1-2 0-3 3-2 8 3 16 4 25 4Z"/></g>
+    <g id="right-wing" transform="translate(180 0) scale(-1 1)">
+<path d="M48 94C23 77 4 47 18 20c2-4 5-4 5 1-1 22 9 35 27 52Z"/>
+<path d="M48 107C21 99 5 80 5 61c0-4 3-5 5-1 10 16 24 24 40 31Z"/>
+<path d="M48 120C29 117 14 107 11 94c-1-4 1-5 4-3 11 10 22 13 35 16Z"/>
+<path d="M49 128c-13 1-24-5-27-11-1-2 0-3 3-2 8 3 16 4 25 4Z"/></g>
+  </g>
+  <g id="star-and-orbit" fill="url(#metal)">
+    <path d="M31 53Q38 23 73 14m34 0q35 9 42 39" fill="none" stroke="url(#metal)" stroke-width="2" stroke-linecap="round"/>
+    <path d="M90 0q3 11 6 13 3 2 12 4-9 2-12 5-3 3-6 13-3-10-6-13-3-3-12-5 9-2 12-4 3-2 6-13Z" transform="translate(0 2)"/>
+  </g>
+  <g id="pin">
+    <rect x="36" y="37" width="108" height="101" rx="24" fill="#513427"/>
+    <rect x="36" y="34" width="108" height="101" rx="24" fill="url(#metal)" stroke="var(--champagne-edge)" stroke-width="1"/>
+    <rect x="40" y="38" width="100" height="93" rx="20" fill="none" stroke="var(--champagne-light)" stroke-width="1"/>
+    <rect x="42" y="40" width="96" height="89" rx="19" fill="url(#enamel)" stroke="var(--enamel-shade)" stroke-width="1.5"/>
+  </g>
+  <g id="track-symbol" stroke-linejoin="round">
+<path fill="url(#symbol)" d="M65 102q2-38 52-42-1 44-44 43l-5 7q-4 0-3-3Z"/>
+<path d="M70 103q12-15 33-31" stroke="var(--enamel-shade)" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </g>
+</svg>

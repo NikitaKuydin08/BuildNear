@@ -42,6 +42,8 @@ export const events = pgTable("events", {
   // Shown at the venue; entering it proves presence.
   checkInCode: text("check_in_code").notNull(),
   lumaUrl: text("luma_url"),
+  // Which badge field this event counts toward (key from BADGE_FIELDS). Null = no field badge.
+  field: text("field"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

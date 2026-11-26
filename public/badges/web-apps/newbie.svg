@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 150" role="img" aria-labelledby="badge-title">
+  <title id="badge-title">Web &amp; Apps · Newbie</title>
+  <style>
+    svg {
+      --enamel-light: #a15d48;
+      --enamel-shade: #542b20;
+      --symbol-light: #f8d3ba;
+      --symbol-shade: #cc8d70;
+      --champagne-light: #fff0d5;
+      --champagne-mid: #d5a879;
+      --champagne-edge: #a77b57;
+      --bookmark: #141116;
+    }
+  </style>
+  <defs>
+    <linearGradient id="metal" x2=".22" y2="1">
+      <stop stop-color="var(--champagne-light)"/>
+      <stop offset=".32" stop-color="var(--champagne-mid)"/>
+      <stop offset=".65" stop-color="var(--champagne-light)"/>
+      <stop offset="1" stop-color="var(--champagne-edge)"/>
+    </linearGradient>
+    <linearGradient id="enamel" x2=".35" y2="1">
+      <stop stop-color="var(--enamel-light)"/>
+      <stop offset="1" stop-color="var(--enamel-shade)"/>
+    </linearGradient>
+    <linearGradient id="symbol" x2=".3" y2="1">
+      <stop stop-color="var(--symbol-light)"/>
+      <stop offset="1" stop-color="var(--symbol-shade)"/>
+    </linearGradient>
+    <linearGradient id="feather" x2=".75" y2="1">
+      <stop stop-color="var(--symbol-light)"/>
+      <stop offset=".5" stop-color="var(--symbol-shade)"/>
+      <stop offset="1" stop-color="var(--enamel-light)"/>
+    </linearGradient>
+  </defs>
+  <g id="pin">
+    <rect x="36" y="37" width="108" height="101" rx="24" fill="#513427"/>
+    <rect x="36" y="34" width="108" height="101" rx="24" fill="url(#metal)" stroke="var(--champagne-edge)" stroke-width="1"/>
+    <rect x="40" y="38" width="100" height="93" rx="20" fill="none" stroke="var(--champagne-light)" stroke-width="1"/>
+    <rect x="42" y="40" width="96" height="89" rx="19" fill="url(#enamel)" stroke="var(--enamel-shade)" stroke-width="1.5"/>
+  </g>
+  <g id="track-symbol" stroke-linejoin="round">
+<rect x="64" y="63" width="52" height="42" rx="7" fill="url(#symbol)"/>
+<path d="M65 76h50" stroke="var(--enamel-shade)" stroke-width="1.5"/>
+<path d="M71 70h.5m6 0h.5m6 0h.5" stroke="var(--enamel-shade)" stroke-width="3" stroke-linecap="round"/>
+<path fill="var(--enamel-shade)" d="m89 81 16 9-7 1 4 6-4 2-4-6-4 5Z"/>
+  </g>
+</svg>

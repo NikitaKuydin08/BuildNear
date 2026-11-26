@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { Avatar } from "@/components/Avatar";
 import { IntroControl } from "@/components/IntroControl";
 import { FIELDS } from "@/lib/fields";
-import { canConnect, getUser, introStatesFor, listProjects } from "@/lib/queries";
+import { BadgeShelf } from "@/components/BadgeShelf";
+import { canConnect, fieldProgress, getUser, introStatesFor, listProjects } from "@/lib/queries";
 import { requireUserId } from "@/lib/session";
 
 const MEET: Record<string, string> = { in_person: "Happy to meet in person", open: "Open to meeting", chat_first: "Chat first" };
@@ -17,7 +18,7 @@ async function Profile({ params }: { params: PageProps<"/people/[id]">["params"]
   const meId = await requireUserId(`/people/${id}`);
   const isMe = meId === id;
 
-  const [person, projects] = await Promise.all([getUser(id), listProjects(id)]);
+  const [person, projects, progress] = await Promise.all([getUser(id), listProjects(id), fieldProgress(id)]);
   if (!person) notFound();
 
   const states = isMe ? new Map() : await introStatesFor(meId, [id]);
@@ -52,6 +53,8 @@ async function Profile({ params }: { params: PageProps<"/people/[id]">["params"]
           ))}
         </div>
       )}
+
+      <BadgeShelf rows={progress} />
 
       {person.stack.length > 0 && (
         <div className="flex flex-wrap gap-1.5">

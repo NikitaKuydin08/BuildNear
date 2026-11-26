@@ -3,6 +3,7 @@ import Link from "next/link";
 import { desc } from "drizzle-orm";
 import { getDb } from "@/db";
 import { events } from "@/db/schema";
+import { BADGE_FIELDS } from "@/lib/badge-levels";
 import { requireAdmin } from "@/lib/organizer";
 import { EventTimes } from "@/components/DateTimeField";
 import { createEvent } from "./actions";
@@ -22,6 +23,13 @@ async function AdminView({ searchParams }: { searchParams: PageProps<"/admin/eve
         <label className="flex flex-col gap-1 text-sm font-medium">Title<input name="title" required maxLength={80} className={input} /></label>
         <label className="flex flex-col gap-1 text-sm font-medium">Venue<input name="venue" required maxLength={120} className={input} /></label>
         <EventTimes />
+        <label className="flex flex-col gap-1 text-sm font-medium">
+          Badge field (what people earn levels in)
+          <select name="field" defaultValue="" className={input}>
+            <option value="">No field badge</option>
+            {BADGE_FIELDS.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
+          </select>
+        </label>
         <label className="flex flex-col gap-1 text-sm font-medium">Luma link (optional)<input name="lumaUrl" type="url" className={input} /></label>
         {sp.error && <p className="text-sm text-red-600">Check the fields. The end must be after the start.</p>}
         {sp.created && <p className="text-sm text-green-700 dark:text-green-400">Event created.</p>}
@@ -35,6 +43,7 @@ async function AdminView({ searchParams }: { searchParams: PageProps<"/admin/eve
             <li key={e.id} className="rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
               <p className="font-medium">{e.title}</p>
               <p className="text-xs text-neutral-500">{e.venue} · {fmt(e.startsAt)} to {fmt(e.endsAt)}</p>
+              <p className="text-xs text-neutral-500">Badge field: {BADGE_FIELDS.find((f) => f.key === e.field)?.label ?? "none"}</p>
               <p className="mt-1 text-xs text-neutral-500">Typed code: <span className="font-mono">{e.checkInCode}</span></p>
               <Link href={`/events/${e.slug}/qr`} className="mt-3 flex min-h-11 items-center justify-center rounded-full bg-black px-4 text-sm font-medium text-white dark:bg-white dark:text-black">
                 Show check-in QR
