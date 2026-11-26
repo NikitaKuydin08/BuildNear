@@ -1,9 +1,11 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { githubToken, listMyRepos } from "@/lib/github";
-import { getUser } from "@/lib/queries";
+import { ConfirmSubmit } from "@/components/ConfirmSubmit";
+import { getUser, listProjects } from "@/lib/queries";
 import { requireUserId } from "@/lib/session";
 import { importRepo } from "./actions";
+import { removeProjectFromList } from "../actions";
 
 const ERRORS: Record<string, string> = {
   token: "GitHub access is missing. Sign out and sign in again, then come back here.",
@@ -19,7 +21,9 @@ async function RepoList({ searchParams }: { searchParams: PageProps<"/profile/re
   if (!me) return null;
   if (!token) return <p className="text-sm text-neutral-500">{ERRORS.token}</p>;
 
-  const { repos, hasInstallation } = await listMyRepos(me.githubLogin, token);
+  const [{ repos, hasInstallation }, mine] = await Promise.all([listMyRepos(me.githubLogin, token), listProjects(me.id)]);
+  // A repo counts as added when a project with its name exists (the same rule the import uses to refuse duplicates).
+  const added = new Map(mine.map((p) => [p.title, p]));
   // The app's own install page, where the person picks which private repos to share. Slug = github.com/apps/<slug>.
   const slug = process.env.GITHUB_APP_SLUG || "buildnear";
   const manage = `https://github.com/apps/${slug}/installations/new`;
@@ -28,6 +32,7 @@ async function RepoList({ searchParams }: { searchParams: PageProps<"/profile/re
   return (
     <>
       {error && <p className="text-sm text-red-600">{error}</p>}
+      {sp.removed && <p className="text-sm text-green-700 dark:text-green-400">Project removed.</p>}
       <p className="text-sm text-neutral-500">
         Pick a repository to add it as a project. Only its name, description (or the first paragraph of its README) and main language are copied, never its code. A private repository shows no link.
       </p>
@@ -44,15 +49,27 @@ async function RepoList({ searchParams }: { searchParams: PageProps<"/profile/re
             </div>
             {r.description && <p className="mt-1 text-sm text-neutral-500">{r.description}</p>}
             {r.language && <p className="mt-1 text-xs text-neutral-500">{r.language}</p>}
-            <form action={importRepo} className="mt-3 flex gap-2">
-              <input type="hidden" name="fullName" value={r.full_name} />
-              <button name="as" value="proudest" className="min-h-11 flex-1 rounded-full bg-accent px-4 text-sm font-medium text-black">
-                Proudest project
-              </button>
-              <button name="as" value="other" className="min-h-11 flex-1 rounded-full border border-neutral-300 px-4 text-sm font-medium dark:border-neutral-700">
-                Add
-              </button>
-            </form>
+            {added.has(r.name) ? (
+              <form action={removeProjectFromList} className="mt-3 flex items-center justify-between gap-2">
+                <input type="hidden" name="id" value={added.get(r.name)!.id} />
+                <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                  Added ✓{added.get(r.name)!.featured ? " as your proudest project" : ""}
+                </p>
+                <ConfirmSubmit message="Remove this project from your profile?" className="min-h-11 rounded-full border border-neutral-300 px-4 text-sm font-medium dark:border-neutral-700">
+                  Remove
+                </ConfirmSubmit>
+              </form>
+            ) : (
+              <form action={importRepo} className="mt-3 flex gap-2">
+                <input type="hidden" name="fullName" value={r.full_name} />
+                <button name="as" value="proudest" className="min-h-11 flex-1 rounded-full bg-accent px-4 text-sm font-medium text-black">
+                  Proudest project
+                </button>
+                <button name="as" value="other" className="min-h-11 flex-1 rounded-full border border-neutral-300 px-4 text-sm font-medium dark:border-neutral-700">
+                  Add
+                </button>
+              </form>
+            )}
           </li>
         ))}
       </ul>

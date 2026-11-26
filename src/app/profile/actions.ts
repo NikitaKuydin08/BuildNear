@@ -1,6 +1,6 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
@@ -81,6 +81,27 @@ export async function saveProfile(formData: FormData) {
 
   revalidatePath("/profile");
   redirect("/profile?saved=1");
+}
+
+// Deletes one project right away (it does not wait for "Save"). Only your own project can be removed; the id is checked here.
+export async function removeProject(id: string) {
+  const userId = await requireUserId();
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return { ok: false as const };
+  await getDb().delete(projects).where(and(eq(projects.id, id), eq(projects.userId, userId)));
+  // The Brain's note about you mentions your proudest project, so it learns the new version.
+  after(async () => {
+    const u = await getBrainUser(userId);
+    if (u) await syncProfile(u);
+  });
+  revalidatePath("/profile");
+  revalidatePath("/profile/repos");
+  return { ok: true as const };
+}
+
+// Same, for a plain form on the GitHub import page.
+export async function removeProjectFromList(formData: FormData) {
+  await removeProject(String(formData.get("id") ?? ""));
+  redirect("/profile/repos?removed=1");
 }
 
 // Deletes the account and everything linked to it (profile, projects, check-ins, intro requests, badge records).

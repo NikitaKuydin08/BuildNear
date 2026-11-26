@@ -100,7 +100,7 @@ async function ProfileForm({ searchParams }: { searchParams: PageProps<"/profile
           <p className={hint}>The one thing you want people to ask you about. It appears at the top of your profile and on your card.</p>
         </div>
         <ProudestProject
-          initial={proudest ? { title: proudest.title, description: proudest.description, stack: proudest.stack.join(", "), url: proudest.url ?? "" } : null}
+          initial={proudest ? { id: proudest.id, title: proudest.title, description: proudest.description, stack: proudest.stack.join(", "), url: proudest.url ?? "" } : null}
         />
       </section>
 
@@ -110,7 +110,7 @@ async function ProfileForm({ searchParams }: { searchParams: PageProps<"/profile
           <p className={hint}>Up to 3. They appear on your profile, below your proudest project.</p>
         </div>
         <OtherProjects
-          initial={others.slice(0, 3).map((p) => ({ title: p.title, description: p.description, stack: p.stack.join(", "), url: p.url ?? "" }))}
+          initial={others.slice(0, 3).map((p) => ({ id: p.id, title: p.title, description: p.description, stack: p.stack.join(", "), url: p.url ?? "" }))}
         />
       </section>
 
