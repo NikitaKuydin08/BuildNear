@@ -123,7 +123,8 @@ export async function brainPicks(
       const word = (w: string) => new RegExp(`(^|[^a-z0-9-])${w.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[^a-z0-9-])`).test(hay);
       const hit = candidates.find((c) => word(c.githubLogin) || hay.includes(c.name.toLowerCase()));
       if (!hit || picks.has(hit.id)) continue;
-      picks.set(hit.id, { similarity: r.similarity, why: r.summary.replace(/\s+/g, " ").trim().slice(0, 220) });
+      // The Brain's summary can mention connections between people, so it is never passed on to the UI.
+      picks.set(hit.id, { similarity: r.similarity, why: "" });
     }
     return picks;
   } catch (e) {

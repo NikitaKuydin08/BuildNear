@@ -68,6 +68,8 @@ async function Feed({ eventId, endsAt, base, meId, tab }: { eventId: string; end
   const [states, projectsBy] = await Promise.all([introStatesFor(meId, ids), featuredFor(ids)]);
   const back = tabHref(base, tab);
 
+  // The Brain tab only uses the Brain for the similarity score. The text shown comes from our own profile data:
+  // the Brain's page summaries can mention who connected with whom, which must never be shown to other people.
   if (tab === "brain" && me) {
     const picks = await brainPicks(
       me,
@@ -99,7 +101,7 @@ async function Feed({ eventId, endsAt, base, meId, tab }: { eventId: string; end
             meetPreference={user.meetPreference as MeetPreference}
             hereNow={isHere(checkedInAt, leftAt, endsAt)}
             project={projectsBy.get(user.id)}
-            why={picks.get(user.id)!.why}
+            why={scorePair(toPerson(me), toPerson(user)).why}
             brainMatch={picks.get(user.id)!.similarity}
           >
             <IntroControl toUserId={user.id} back={back} state={states.get(user.id)} />
