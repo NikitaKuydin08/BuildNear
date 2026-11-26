@@ -15,11 +15,12 @@ export function ProudestProject({ initial }: { initial: P | null }) {
   const [current, setCurrent] = useState<P | null>(initial);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [asking, setAsking] = useState(false);
   const [error, setError] = useState(false);
   const has = !!current?.title;
 
   async function remove() {
-    if (!window.confirm("Remove your proudest project? This deletes it from your profile.")) return;
+    setAsking(false);
     setBusy(true);
     setError(false);
     try {
@@ -58,10 +59,19 @@ export function ProudestProject({ initial }: { initial: P | null }) {
           {open ? "Hide" : has ? "Edit" : "Write it myself"}
         </button>
         <Link href="/profile/repos" className={outline}>Pick it from my GitHub repositories</Link>
-        {has && (
-          <button type="button" disabled={busy} onClick={remove} className="min-h-11 text-sm text-neutral-500 underline disabled:opacity-50">
+        {has && !asking && (
+          <button type="button" disabled={busy} onClick={() => setAsking(true)} className="min-h-11 text-sm text-neutral-500 underline disabled:opacity-50">
             {busy ? "Removing…" : "Remove proudest project"}
           </button>
+        )}
+        {has && asking && (
+          <div className="flex flex-col gap-2 rounded-xl border border-red-300 p-3 dark:border-red-900">
+            <p className="text-sm">Delete your proudest project from your profile right away?</p>
+            <div className="flex gap-2">
+              <button type="button" onClick={remove} className="min-h-11 flex-1 rounded-full bg-red-600 px-4 text-sm font-medium text-white">Yes, delete</button>
+              <button type="button" onClick={() => setAsking(false)} className="min-h-11 flex-1 rounded-full border border-neutral-300 px-4 text-sm font-medium dark:border-neutral-700">Cancel</button>
+            </div>
+          </div>
         )}
       </div>
     </div>

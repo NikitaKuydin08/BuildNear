@@ -14,6 +14,7 @@ const MAX = 3;
 export function OtherProjects({ initial }: { initial: P[] }) {
   const [slots, setSlots] = useState<number[]>(initial.map((_, i) => i));
   const [busy, setBusy] = useState<number | null>(null);
+  const [asking, setAsking] = useState<number | null>(null);
   const [error, setError] = useState(false);
 
   function add() {
@@ -23,8 +24,8 @@ export function OtherProjects({ initial }: { initial: P[] }) {
 
   async function remove(i: number) {
     const saved = initial[i]?.id;
+    setAsking(null);
     if (saved) {
-      if (!window.confirm("Remove this project? This deletes it from your profile.")) return;
       setBusy(i);
       setError(false);
       try {
@@ -49,10 +50,23 @@ export function OtherProjects({ initial }: { initial: P[] }) {
           <div key={i} className="flex flex-col gap-2 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium">Project {n + 1}/{MAX}</p>
-              <button type="button" disabled={busy === i} onClick={() => remove(i)} className="min-h-11 px-2 text-sm text-neutral-500 underline disabled:opacity-50">
-                {busy === i ? "Removing…" : "Remove"}
-              </button>
+              {asking === i ? (
+                <span className="flex items-center gap-2">
+                  <button type="button" onClick={() => remove(i)} className="min-h-11 rounded-full bg-red-600 px-3 text-sm font-medium text-white">Yes, delete</button>
+                  <button type="button" onClick={() => setAsking(null)} className="min-h-11 px-2 text-sm text-neutral-500 underline">Cancel</button>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busy === i}
+                  onClick={() => (initial[i]?.id ? setAsking(i) : remove(i))}
+                  className="min-h-11 px-2 text-sm text-neutral-500 underline disabled:opacity-50"
+                >
+                  {busy === i ? "Removing…" : "Remove"}
+                </button>
+              )}
             </div>
+            {asking === i && <p className="text-xs text-neutral-500">This deletes the project from your profile right away.</p>}
             <input name={`o${i}title`} defaultValue={p?.title ?? ""} placeholder="Title" maxLength={60} className={input} />
             <input name={`o${i}desc`} defaultValue={p?.description ?? ""} placeholder="One line about it" maxLength={140} className={input} />
             <input name={`o${i}stack`} defaultValue={p?.stack ?? ""} placeholder="Stack (comma separated)" className={input} />
