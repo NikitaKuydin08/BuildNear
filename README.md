@@ -6,6 +6,8 @@ You sign in with GitHub, check in at the venue by scanning a QR code, and see wh
 
 Live: https://buildnear-eight.vercel.app
 
+Built solo for **BNB Hack Bangkok** (Nov 25-27, 2026): Developer Track and ChatAndBuild (Living Brain).
+
 ## What it does
 
 - **GitHub sign-in.** Your profile (name, picture, main languages) comes from your public GitHub. You can edit everything.
@@ -39,6 +41,23 @@ GitHub gives us a real, verifiable builder profile with no form to fill in, whic
 ## GitHub App permissions
 
 Sign-in uses a GitHub App with read-only **Metadata** access. To add a private repository as a project, a person installs the App on just the repositories they pick. Only the name, description and main language are copied, never code. No webhooks are used.
+
+## How it works
+
+1. Scan the event QR (or type the code) and sign in with GitHub.
+2. Review your profile and consent to join the event.
+3. Browse the people at the event, one card at a time, with a "why matched" line.
+4. Send an intro request with a short note. Contacts stay hidden.
+5. When the other person accepts, both sides see the contacts they chose to share, and a chat opens.
+6. Claim a non-transferable attendance badge on BNB Smart Chain testnet.
+
+## On-chain badge (BNB Smart Chain testnet, chain ID 97)
+
+- Contract `BuilderBadge`: an OpenZeppelin ERC-721 where transfers and burns by holders are blocked, so a badge behaves as soulbound. Source: `contracts/BuilderBadge.sol`.
+- Address: [`0xe5c84381daff0618255078461cb50055b0a17d9d`](https://testnet.bscscan.com/address/0xe5c84381daff0618255078461cb50055b0a17d9d)
+- Checking in proves attendance, then the app's server wallet mints the badge to the address you give. You need an address but no tBNB, because the server pays the gas.
+- Testnet only. Badges have no monetary value.
+- Scripts: `npm run chain:compile`, `chain:wallet`, `chain:deploy`, `test:contract`.
 
 ## Tech
 
