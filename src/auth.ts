@@ -62,6 +62,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           })
           .returning({ id: users.id });
         token.uid = row.id;
+        // Kept only in the encrypted session cookie (never in our database), so the repo picker can read the user's repos.
+        if (account.access_token) token.ghToken = account.access_token;
 
         // Only fill stack/topics when still empty, so manual edits are never overwritten.
         const guess = await fetchStackFromGitHub(gh.login, account.access_token);

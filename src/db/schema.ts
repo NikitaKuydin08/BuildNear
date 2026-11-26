@@ -27,6 +27,8 @@ export const users = pgTable("users", {
   locationLat: doublePrecision("location_lat"),
   locationLon: doublePrecision("location_lon"),
   locationAt: timestamp("location_at", { withTimezone: true }),
+  // Set when the user uploads a picture. The picture itself lives in user_photos, so it is not loaded with every profile query.
+  photoAt: timestamp("photo_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -97,4 +99,10 @@ export const projects = pgTable("projects", {
   url: text("url"),
   featured: boolean("featured").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// One small square JPEG (about 320 px, base64) per user. Served only to signed-in users by /api/avatar/[id].
+export const userPhotos = pgTable("user_photos", {
+  userId: uuid("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  data: text("data").notNull(),
 });

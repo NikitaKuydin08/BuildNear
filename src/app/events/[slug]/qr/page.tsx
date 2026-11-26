@@ -15,8 +15,12 @@ async function QrView({ params }: { params: PageProps<"/events/[slug]/qr">["para
   return (
     <div className="flex flex-col items-center gap-4 text-center">
       <h1 className="text-2xl font-semibold">{event.title}</h1>
-      <p className="text-neutral-500">Scan to check in. The code changes every few seconds.</p>
+      <p className="text-neutral-500">Scan to check in. The QR changes every 30 seconds.</p>
       <LiveQr slug={slug} />
+      <div className="mt-2 w-full max-w-sm rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
+        <p className="text-xs text-neutral-500">QR not working for someone? Give them this code to type in.</p>
+        <p className="mt-1 font-mono text-2xl font-semibold tracking-widest">{event.checkInCode}</p>
+      </div>
     </div>
   );
 }

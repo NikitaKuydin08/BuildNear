@@ -39,6 +39,8 @@ async function NearbyView() {
         {ranked.map(({ user, km, match }) => (
           <PersonCard
             key={user.id}
+            userId={user.id}
+            photoAt={user.photoAt}
             name={user.name}
             stack={user.stack}
             topics={user.topics}

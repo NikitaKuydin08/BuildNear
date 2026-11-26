@@ -9,6 +9,7 @@ import { brainEnabled, brainPicks } from "@/lib/brain";
 import { featuredFor, getAttendance, getBadge, getEventBySlug, getUser, introStatesFor, listAttendees } from "@/lib/queries";
 import { isHere } from "@/lib/presence";
 import { requireUserId } from "@/lib/session";
+import { QrScanner } from "@/components/QrScanner";
 import { checkIn, claimBadge, joinEvent, leaveEvent } from "../actions";
 
 type Props = PageProps<"/events/[slug]">;
@@ -74,22 +75,29 @@ async function EventView({ params, searchParams }: { params: Props["params"]; se
       )}
 
       {attendance && !atVenue && (
-        <form action={checkIn} className="flex flex-col gap-2 rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
-          <p className="text-sm font-medium">At the venue? Enter the event code to check in.</p>
-          <input type="hidden" name="slug" value={slug} />
-          <input
-            name="code"
-            required
-            autoComplete="off"
-            autoCapitalize="characters"
-            placeholder="Event code"
-            className="min-h-12 rounded-xl border border-neutral-300 bg-transparent px-4 dark:border-neutral-700"
-          />
+        <div className="flex flex-col gap-3 rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
+          <p className="text-sm font-medium">At the venue? Scan the QR code the organisers are showing.</p>
+          <QrScanner slug={slug} />
           {error && <p className="text-sm text-red-600">{error}</p>}
-          <button className="min-h-12 rounded-full bg-black px-6 font-medium text-white dark:bg-white dark:text-black" type="submit">
-            Check in
-          </button>
-        </form>
+          <details className="text-sm">
+            <summary className="cursor-pointer text-neutral-500">QR not working?</summary>
+            <form action={checkIn} className="mt-3 flex flex-col gap-2">
+              <p className="text-xs text-neutral-500">Ask the organiser for the check-in code and type it here.</p>
+              <input type="hidden" name="slug" value={slug} />
+              <input
+                name="code"
+                required
+                autoComplete="off"
+                autoCapitalize="characters"
+                placeholder="Check-in code"
+                className="min-h-12 rounded-xl border border-neutral-300 bg-transparent px-4 dark:border-neutral-700"
+              />
+              <button className="min-h-12 rounded-full border border-neutral-300 px-6 font-medium dark:border-neutral-700" type="submit">
+                Check in with code
+              </button>
+            </form>
+          </details>
+        </div>
       )}
 
       {atVenue && (
@@ -195,6 +203,8 @@ async function Feed({ eventId, endsAt, slug, meId, tab }: { eventId: string; end
         {known.map(({ user, checkedInAt, leftAt }) => (
           <PersonCard
             key={user.id}
+            userId={user.id}
+            photoAt={user.photoAt}
             name={user.name}
             stack={user.stack}
             topics={user.topics}
@@ -221,6 +231,8 @@ async function Feed({ eventId, endsAt, slug, meId, tab }: { eventId: string; end
         {ranked.map(({ user, checkedInAt, leftAt, match }) => (
           <PersonCard
             key={user.id}
+            userId={user.id}
+            photoAt={user.photoAt}
             name={user.name}
             stack={user.stack}
             topics={user.topics}
@@ -242,7 +254,9 @@ async function Feed({ eventId, endsAt, slug, meId, tab }: { eventId: string; end
       {rows.map(({ user, checkedInAt, leftAt }) => (
         <PersonCard
           key={user.id}
-          name={user.name}
+          userId={user.id}
+            photoAt={user.photoAt}
+            name={user.name}
           stack={user.stack}
           topics={user.topics}
           meetPreference={user.meetPreference as MeetPreference}

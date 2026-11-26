@@ -1,4 +1,4 @@
-// Sends every user's profile to the Brain (one capture per changed profile). Demo users included.
+// Sends every user's profile to the Brain (one capture per changed profile). Demo users included, unless you pass --real-only.
 import nextEnv from "@next/env";
 const { loadEnvConfig } = nextEnv;
 import { neon } from "@neondatabase/serverless";
@@ -11,7 +11,10 @@ loadEnvConfig(process.cwd());
 if (!brainEnabled()) throw new Error("Brain not configured. Run npm run brain:init first.");
 
 const db = drizzle({ client: neon(process.env.DATABASE_URL!), schema });
-const users = await db.select().from(schema.users);
+const realOnly = process.argv.includes("--real-only");
+const all = await db.select().from(schema.users);
+// --real-only skips the fake demo people (github ids starting with "demo-").
+const users = realOnly ? all.filter((u) => !u.githubId.startsWith("demo-")) : all;
 const featured = await db.select().from(schema.projects).where(eq(schema.projects.featured, true));
 let ok = 0;
 for (const u of users) {

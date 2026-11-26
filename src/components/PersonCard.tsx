@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { Avatar } from "@/components/Avatar";
 import type { MeetPreference } from "@/lib/match";
 
 const MEET_LABEL: Record<MeetPreference, string> = {
@@ -7,6 +9,8 @@ const MEET_LABEL: Record<MeetPreference, string> = {
 };
 
 export type PersonCardProps = {
+  userId?: string;
+  photoAt?: Date | null;
   name: string;
   stack: string[];
   topics: string[];
@@ -25,11 +29,19 @@ export function PersonCard(p: PersonCardProps) {
   return (
     <li className="rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
       <div className="flex items-center gap-3">
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-neutral-200 text-lg font-semibold dark:bg-neutral-800">
-          {p.name.charAt(0).toUpperCase()}
-        </div>
+        {p.userId ? (
+          <Avatar userId={p.userId} name={p.name} photoAt={p.photoAt} />
+        ) : (
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-neutral-200 text-lg font-semibold dark:bg-neutral-800">
+            {p.name.charAt(0).toUpperCase()}
+          </div>
+        )}
         <div className="min-w-0 flex-1">
-          <p className="truncate font-medium">{p.name}</p>
+          {p.userId ? (
+            <Link href={`/people/${p.userId}`} className="block truncate font-medium underline-offset-2 hover:underline">{p.name}</Link>
+          ) : (
+            <p className="truncate font-medium">{p.name}</p>
+          )}
           <p className="text-xs text-neutral-500">
             {MEET_LABEL[p.meetPreference]}
             {p.distance ? ` · ${p.distance}` : ""}

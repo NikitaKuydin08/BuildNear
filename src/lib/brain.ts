@@ -19,7 +19,7 @@ export type BrainUser = {
 };
 
 export function brainEnabled() {
-  return !!(process.env.LIVING_BRAIN_API_KEY && process.env.LIVING_BRAIN_BRAIN_ID && process.env.LIVING_BRAIN_SUBJECT_ID);
+  return !!(process.env.LIVING_BRAIN_API_KEY && process.env.LIVING_BRAIN_BRAIN_ID);
 }
 
 // Loaded on demand, so a missing or broken SDK can never take a page down.
@@ -27,7 +27,9 @@ async function client(): Promise<Client> {
   const { LivingBrainClient } = await import("@living-brain/sdk");
   return new LivingBrainClient({
     apiKey: process.env.LIVING_BRAIN_API_KEY!,
-    subjectId: process.env.LIVING_BRAIN_SUBJECT_ID!,
+    // No subject id: the API key already identifies its owner (verified with scripts/brain-whoami.mjs).
+    // The SDK types require the field, but it works left undefined.
+    subjectId: undefined as unknown as string,
   });
 }
 

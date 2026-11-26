@@ -1,7 +1,7 @@
 import { eq, or } from "drizzle-orm";
 import { auth } from "@/auth";
 import { getDb } from "@/db";
-import { attendances, badges, events, introRequests, projects, users } from "@/db/schema";
+import { attendances, badges, events, introRequests, projects, userPhotos, users } from "@/db/schema";
 
 // "Download my data": everything we store about the signed-in user, as JSON.
 export async function GET() {
@@ -13,6 +13,7 @@ export async function GET() {
   const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
   if (!user) return new Response("Not found", { status: 404 });
 
+  const [photo] = await db.select().from(userPhotos).where(eq(userPhotos.userId, id)).limit(1);
   const [mine, att, bad, intros] = await Promise.all([
     db.select().from(projects).where(eq(projects.userId, id)),
     db.select({ event: events.title, joinedAt: attendances.joinedAt, checkedInAt: attendances.checkedInAt })
@@ -25,6 +26,7 @@ export async function GET() {
   const body = {
     exportedAt: new Date().toISOString(),
     profile: user,
+    profilePicture: photo ? `data:image/jpeg;base64,${photo.data}` : null,
     projects: mine,
     eventAttendance: att,
     badges: bad,
