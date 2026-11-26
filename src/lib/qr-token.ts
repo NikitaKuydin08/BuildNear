@@ -1,9 +1,9 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 // Rotating check-in token: HMAC(secret, eventId + 30-second window). No database needed.
-// The server accepts the current window and the two before it (about 90 s), so a photo of an old QR is useless.
+// The server accepts the current window and the five before it (about 3 min): a new person may need that long to sign in with GitHub after scanning. An old photo of the QR is still useless after that.
 const STEP_MS = 30_000;
-const ACCEPT_WINDOWS = 3;
+const ACCEPT_WINDOWS = 6;
 
 function secret() {
   const s = process.env.AUTH_SECRET;

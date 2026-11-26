@@ -55,7 +55,7 @@ async function InboxView() {
             <Card key={r.id} row={r}>
               <form action={respondIntro} className="mt-3 flex gap-2">
                 <input type="hidden" name="id" value={r.id} />
-                <button name="decision" value="accept" className="min-h-11 flex-1 rounded-full bg-black px-4 text-sm font-medium text-white dark:bg-white dark:text-black">
+                <button name="decision" value="accept" className="min-h-11 flex-1 rounded-full bg-accent px-4 text-sm font-medium text-black">
                   Accept
                 </button>
                 <button name="decision" value="decline" className="min-h-11 flex-1 rounded-full border border-neutral-300 px-4 text-sm font-medium dark:border-neutral-700">

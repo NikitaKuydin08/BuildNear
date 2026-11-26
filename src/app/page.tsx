@@ -21,7 +21,7 @@ async function AuthPanel({ next }: { next: Promise<string | string[] | undefined
       }}
     >
       <button
-        className="min-h-12 rounded-full bg-black px-8 font-medium text-white dark:bg-white dark:text-black"
+        className="min-h-12 rounded-full bg-accent px-8 font-medium text-black"
         type="submit"
       >
         Sign in with GitHub

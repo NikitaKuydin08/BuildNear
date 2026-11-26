@@ -126,7 +126,7 @@ async function ProfileForm({ searchParams }: { searchParams: PageProps<"/profile
       </section>
 
       {sp.saved && <p className="text-sm text-green-700 dark:text-green-400">Saved.</p>}
-      <button className="min-h-12 rounded-full bg-black px-6 font-medium text-white dark:bg-white dark:text-black" type="submit">
+      <button className="min-h-12 rounded-full bg-accent px-6 font-medium text-black" type="submit">
         Save
       </button>
     </form>
@@ -188,9 +188,6 @@ export default function ProfilePage(props: PageProps<"/profile">) {
         >
           <button className={outlineBtn} type="submit">Sign out</button>
         </form>
-        <p className="text-center text-xs text-neutral-500">
-          What we store and why: <Link href="/privacy" className="underline">Privacy &amp; data</Link>
-        </p>
       </div>
     </main>
   );

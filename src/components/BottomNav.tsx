@@ -24,7 +24,7 @@ export function BottomNav() {
               <Link
                 href={item.href}
                 className={`flex min-h-14 items-center justify-center text-sm font-medium ${
-                  active ? "text-black dark:text-white" : "text-neutral-500"
+                  active ? "text-accent2" : "text-neutral-500"
                 }`}
               >
                 {item.label}

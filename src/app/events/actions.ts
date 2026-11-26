@@ -12,22 +12,6 @@ import { syncProfile } from "@/lib/brain";
 import { getBadge, getBrainUser, getEventBySlug } from "@/lib/queries";
 import { requireUserId } from "@/lib/session";
 
-export async function joinEvent(formData: FormData) {
-  const userId = await requireUserId();
-  const slug = String(formData.get("slug") ?? "");
-  const event = await getEventBySlug(slug);
-  if (!event) redirect("/events");
-
-  await getDb().insert(attendances).values({ userId, eventId: event.id }).onConflictDoNothing();
-  // Make sure the Brain knows this person before others look for matches (deduplicated by profile hash).
-  after(async () => {
-    const u = await getBrainUser(userId);
-    if (u) await syncProfile(u);
-  });
-  revalidatePath(`/events/${slug}`);
-  redirect(`/events/${slug}`);
-}
-
 // Entering the venue code proves presence: valid only during the event window (2 h early to the end).
 export async function checkIn(formData: FormData) {
   const userId = await requireUserId();
@@ -52,6 +36,11 @@ export async function checkIn(formData: FormData) {
     .set({ checkedInAt: new Date(), leftAt: null })
     .where(and(eq(attendances.userId, userId), eq(attendances.eventId, event.id)));
 
+  // Make sure the Brain knows this person before others look for matches (deduplicated by profile hash).
+  after(async () => {
+    const u = await getBrainUser(userId);
+    if (u) await syncProfile(u);
+  });
   revalidatePath(`/events/${slug}`);
   redirect(`/events/${slug}`);
 }

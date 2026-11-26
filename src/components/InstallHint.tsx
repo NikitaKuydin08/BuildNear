@@ -58,7 +58,7 @@ export function InstallHint() {
       {prompt && (
         <button
           onClick={async () => { await prompt.prompt(); dismiss(); }}
-          className="min-h-11 rounded-full bg-black px-4 text-sm font-medium text-white dark:bg-white dark:text-black"
+          className="min-h-11 rounded-full bg-accent px-4 text-sm font-medium text-black"
         >
           Install
         </button>

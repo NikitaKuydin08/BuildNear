@@ -18,7 +18,7 @@ export default function PrivacyPage() {
         <li className={li}><b>From your repositories, only if you pick them:</b> on &quot;Import from GitHub&quot; we read the name, description (or the first paragraph of the README) and main language of a repository you choose (private ones too, if you gave the app access). We never read code. A private repository shows no link.</li>
         <li className={li}><b>A profile picture, only if you upload one:</b> your phone shrinks it to a small square before sending. It is shown to signed-in people who can see your card or profile. Remove it any time on your profile, and it is deleted with your account.</li>
         <li className={li}><b>From you:</b> stack, interests, tags, meeting preference, work status (optional), up to 3 projects, and optional Telegram, WhatsApp, LinkedIn and email contacts, and a wallet address if you claim a badge.</li>
-        <li className={li}><b>From your use:</b> which events you join, when you check in, intro requests you send or receive, and badges you claim.</li>
+        <li className={li}><b>From your use:</b> which events you check in to, when you check in, intro requests you send or receive, and badges you claim.</li>
         <li className={li}><b>Location, only if you tap &quot;Share my area&quot;:</b> your browser asks permission. We store one approximate position (rounded to about 1 km) and the time. No history. It is ignored after 4 hours and deleted when you stop sharing.</li>
       </ul>
 

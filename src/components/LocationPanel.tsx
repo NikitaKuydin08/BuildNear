@@ -34,7 +34,7 @@ export function LocationPanel({ sharing, until }: { sharing: boolean; until: str
         <p className="text-sm font-medium">You are visible to people nearby{until ? ` until about ${until}` : ""}.</p>
         <p className="text-xs text-neutral-500">Only your approximate area is stored (about 1 km), never exact coordinates. It disappears after 4 hours unless you open this tab again.</p>
         <div className="flex gap-2">
-          <button onClick={locate} disabled={pending} className={`${btn} flex-1 bg-black text-white dark:bg-white dark:text-black`}>Update now</button>
+          <button onClick={locate} disabled={pending} className={`${btn} flex-1 bg-accent text-black`}>Update now</button>
           <button onClick={() => start(async () => { await stopSharing(); })} disabled={pending} className={`${btn} flex-1 border border-neutral-300 dark:border-neutral-700`}>Stop sharing</button>
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
@@ -49,7 +49,7 @@ export function LocationPanel({ sharing, until }: { sharing: boolean; until: str
         If you share, other people who share can see you in this tab. We store only your approximate area (rounded to about 1 km), only your latest position, and delete it after 4 hours or when you stop. Nobody sees coordinates, only “same area” or an approximate distance.
         See the <Link href="/privacy" className="underline">privacy notice</Link>.
       </p>
-      <button onClick={locate} disabled={pending} className={`${btn} bg-black text-white dark:bg-white dark:text-black`}>
+      <button onClick={locate} disabled={pending} className={`${btn} bg-accent text-black`}>
         {pending ? "Saving…" : "Share my area"}
       </button>
       {error && <p className="text-sm text-red-600">{error}</p>}

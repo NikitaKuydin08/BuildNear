@@ -1,11 +1,11 @@
 import { Suspense } from "react";
-import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { AutoCheckIn } from "@/components/AutoCheckIn";
 import { getAttendance, getEventBySlug } from "@/lib/queries";
 import { requireUserId } from "@/lib/session";
 import { checkIn } from "../../actions";
 
-// Opened by scanning the event QR. A button (not an automatic GET) does the check-in,
+// Opened by scanning the event QR. After sign-in the form submits itself (a POST from the browser, not a GET),
 // so link previews and prefetching can never check anyone in by accident.
 async function CheckInView({ params, searchParams }: { params: PageProps<"/events/[slug]/checkin">["params"]; searchParams: PageProps<"/events/[slug]/checkin">["searchParams"] }) {
   const { slug } = await params;
@@ -19,30 +19,9 @@ async function CheckInView({ params, searchParams }: { params: PageProps<"/event
   const attendance = await getAttendance(meId, event.id);
 
   const stillHere = !!attendance?.checkedInAt && !(attendance.leftAt && attendance.leftAt >= attendance.checkedInAt);
-  if (stillHere) {
-    return (
-      <>
-        <p className="rounded-2xl bg-green-100 p-3 text-sm font-medium text-green-800 dark:bg-green-900/40 dark:text-green-300">
-          You're already checked in.
-        </p>
-        <Link href={`/events/${slug}`} className="flex min-h-12 items-center justify-center rounded-full bg-black px-6 font-medium text-white dark:bg-white dark:text-black">
-          Open the event
-        </Link>
-      </>
-    );
-  }
+  if (stillHere) redirect(`/events/${slug}`);
 
-  return (
-    <form action={checkIn} className="flex flex-col gap-3">
-      <input type="hidden" name="slug" value={slug} />
-      <input type="hidden" name="code" value={code} />
-      <input type="hidden" name="token" value={token} />
-      <p className="text-sm text-neutral-500">Confirm that you are at the venue right now.</p>
-      <button className="min-h-12 rounded-full bg-black px-6 font-medium text-white dark:bg-white dark:text-black" type="submit">
-        Check in to {event.title}
-      </button>
-    </form>
-  );
+  return <AutoCheckIn action={checkIn} slug={slug} code={code} token={token} title={event.title} />;
 }
 
 export default function CheckInPage(props: PageProps<"/events/[slug]/checkin">) {

@@ -27,7 +27,7 @@ export function IntroControl({ toUserId, back, state }: { toUserId: string; back
           className="min-h-11 rounded-xl border border-neutral-300 bg-transparent px-3 text-sm dark:border-neutral-700"
         />
       )}
-      <button className="min-h-11 rounded-full bg-black px-4 text-sm font-medium text-white dark:bg-white dark:text-black" type="submit">
+      <button className="min-h-11 rounded-full bg-accent px-4 text-sm font-medium text-black" type="submit">
         {incoming ? "Accept intro" : "Request intro"}
       </button>
     </form>

@@ -11,13 +11,13 @@ import { featuredFor, getAttendance, getBadge, getEventBySlug, getUser, introSta
 import { isHere } from "@/lib/presence";
 import { requireUserId } from "@/lib/session";
 import { QrScanner } from "@/components/QrScanner";
-import { checkIn, claimBadge, joinEvent, leaveEvent } from "../actions";
+import { checkIn, claimBadge, leaveEvent } from "../actions";
 
 type Props = PageProps<"/events/[slug]">;
 type Tab = "everyone" | "for-you" | "brain";
 
 const ERRORS: Record<string, string> = {
-  code: "That code doesn't match. Check the code shown at the venue.",
+  code: "That QR or code didn't work. Scan the live QR again, or type the code shown at the venue.",
   window: "Check-in is only open during the event.",
   wallet: "That doesn't look like a wallet address (0x… with 42 characters).",
   minter: "That is the app's own wallet. Paste your personal wallet address from MetaMask.",
@@ -66,18 +66,9 @@ async function EventView({ params, searchParams }: { params: Props["params"]; se
         <p className="text-sm text-neutral-500">{event.venue}</p>
       </div>
 
-      {!attendance && (
-        <form action={joinEvent}>
-          <input type="hidden" name="slug" value={slug} />
-          <button className="min-h-12 w-full rounded-full bg-black px-6 font-medium text-white dark:bg-white dark:text-black" type="submit">
-            Join this event
-          </button>
-        </form>
-      )}
-
-      {attendance && !atVenue && (
+      {!atVenue && (
         <div className="flex flex-col gap-3 rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
-          <p className="text-sm font-medium">At the venue? Scan the QR code the organisers are showing.</p>
+          <p className="text-sm font-medium">At the venue? Scan the QR code on the screen to check in.</p>
           <QrScanner slug={slug} />
           {error && <p className="text-sm text-red-600">{error}</p>}
           <details className="text-sm">
@@ -137,7 +128,7 @@ async function EventView({ params, searchParams }: { params: Props["params"]; se
                 className="min-h-12 rounded-xl border border-neutral-300 bg-transparent px-4 text-sm dark:border-neutral-700"
               />
               {error && <p className="text-sm text-red-600">{error}</p>}
-              <button className="min-h-12 rounded-full bg-black px-6 font-medium text-white dark:bg-white dark:text-black" type="submit">
+              <button className="min-h-12 rounded-full bg-accent px-6 font-medium text-black" type="submit">
                 Claim badge
               </button>
             </form>
@@ -145,7 +136,7 @@ async function EventView({ params, searchParams }: { params: Props["params"]; se
         </div>
       )}
 
-      {attendance && (
+      {attendance?.checkedInAt && (
         <>
           <div className="flex gap-2 rounded-full bg-neutral-100 p-1 dark:bg-neutral-900">
             {[

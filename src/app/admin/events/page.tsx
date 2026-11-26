@@ -33,7 +33,7 @@ async function AdminView({ searchParams }: { searchParams: PageProps<"/admin/eve
         <label className="flex flex-col gap-1 text-sm font-medium">Luma link (optional)<input name="lumaUrl" type="url" className={input} /></label>
         {sp.error && <p className="text-sm text-red-600">Check the fields. The end must be after the start.</p>}
         {sp.created && <p className="text-sm text-green-700 dark:text-green-400">Event created.</p>}
-        <button className="min-h-12 rounded-full bg-black px-6 font-medium text-white dark:bg-white dark:text-black" type="submit">Create event</button>
+        <button className="min-h-12 rounded-full bg-accent px-6 font-medium text-black" type="submit">Create event</button>
       </form>
 
       <section className="flex flex-col gap-3">
@@ -45,7 +45,7 @@ async function AdminView({ searchParams }: { searchParams: PageProps<"/admin/eve
               <p className="text-xs text-neutral-500">{e.venue} · {fmt(e.startsAt)} to {fmt(e.endsAt)}</p>
               <p className="text-xs text-neutral-500">Badge field: {BADGE_FIELDS.find((f) => f.key === e.field)?.label ?? "none"}</p>
               <p className="mt-1 text-xs text-neutral-500">Typed code: <span className="font-mono">{e.checkInCode}</span></p>
-              <Link href={`/events/${e.slug}/qr`} className="mt-3 flex min-h-11 items-center justify-center rounded-full bg-black px-4 text-sm font-medium text-white dark:bg-white dark:text-black">
+              <Link href={`/events/${e.slug}/qr`} className="mt-3 flex min-h-11 items-center justify-center rounded-full bg-accent px-4 text-sm font-medium text-black">
                 Show check-in QR
               </Link>
             </li>

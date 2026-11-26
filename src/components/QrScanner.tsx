@@ -84,7 +84,7 @@ export function QrScanner({ slug }: { slug: string }) {
       ) : (
         <button
           onClick={() => { setMsg(null); setOpen(true); }}
-          className="min-h-12 rounded-full bg-black px-6 font-medium text-white dark:bg-white dark:text-black"
+          className="min-h-12 rounded-full bg-accent px-6 font-medium text-black"
         >
           Scan QR to check in
         </button>

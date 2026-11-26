@@ -50,7 +50,7 @@ export function PhotoUpload({ userId, name, photoAt }: { userId: string; name: s
           type="button"
           disabled={pending}
           onClick={() => input.current?.click()}
-          className="min-h-11 rounded-full bg-black px-4 text-sm font-medium text-white dark:bg-white dark:text-black"
+          className="min-h-11 rounded-full bg-accent px-4 text-sm font-medium text-black"
         >
           {pending ? "Saving…" : src ? "Change picture" : "Add a picture"}
         </button>

@@ -45,7 +45,7 @@ async function RepoList({ searchParams }: { searchParams: PageProps<"/profile/re
             {r.language && <p className="mt-1 text-xs text-neutral-500">{r.language}</p>}
             <form action={importRepo} className="mt-3 flex gap-2">
               <input type="hidden" name="fullName" value={r.full_name} />
-              <button name="as" value="proudest" className="min-h-11 flex-1 rounded-full bg-black px-4 text-sm font-medium text-white dark:bg-white dark:text-black">
+              <button name="as" value="proudest" className="min-h-11 flex-1 rounded-full bg-accent px-4 text-sm font-medium text-black">
                 Proudest project
               </button>
               <button name="as" value="other" className="min-h-11 flex-1 rounded-full border border-neutral-300 px-4 text-sm font-medium dark:border-neutral-700">
