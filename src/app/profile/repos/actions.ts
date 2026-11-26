@@ -37,6 +37,7 @@ export async function importRepo(formData: FormData) {
     stack: [repo.language, ...(repo.topics ?? [])].filter((x): x is string => !!x).slice(0, 6),
     // A private repo's link would not open for anyone else, so none is stored.
     url: repo.private ? null : repo.html_url,
+    visibility: repo.private ? "private" : "public",
     featured,
   });
   revalidatePath("/profile");

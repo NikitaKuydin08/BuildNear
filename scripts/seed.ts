@@ -53,6 +53,8 @@ async function main() {
         startsAt: new Date(now - DAY),
         endsAt: new Date(now + 60 * DAY),
         checkInCode: "AINIGHT",
+        venueLat: 13.7367,
+        venueLon: 100.5603,
       },
       {
         slug: "web3-builders-demo",
@@ -61,6 +63,8 @@ async function main() {
         startsAt: new Date(now - DAY),
         endsAt: new Date(now + 60 * DAY),
         checkInCode: "WEB3BKK",
+        venueLat: 13.726,
+        venueLon: 100.532,
       },
     ])
     .onConflictDoNothing();

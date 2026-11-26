@@ -6,7 +6,7 @@ import { events } from "@/db/schema";
 import { BADGE_FIELDS } from "@/lib/badge-levels";
 import { requireAdmin } from "@/lib/organizer";
 import { EventTimes } from "@/components/DateTimeField";
-import { createEvent, setEventField } from "./actions";
+import { createEvent, setEventCoords, setEventField } from "./actions";
 
 const input = "min-h-12 w-full rounded-xl border border-neutral-300 bg-transparent px-4 dark:border-neutral-700";
 const fmt = (d: Date) => d.toLocaleString("en-GB", { timeZone: "Asia/Bangkok", dateStyle: "medium", timeStyle: "short" });
@@ -31,7 +31,11 @@ async function AdminView({ searchParams }: { searchParams: PageProps<"/admin/eve
           </select>
         </label>
         <label className="flex flex-col gap-1 text-sm font-medium">Luma link (optional)<input name="lumaUrl" type="url" className={input} /></label>
-        {sp.error && <p className="text-sm text-red-600">Check the fields. The end must be after the start.</p>}
+        <label className="flex flex-col gap-1 text-sm font-medium">
+          Venue on the map (optional)
+          <input name="coords" placeholder="13.7563, 100.5018 (copy from a maps app)" className={input} />
+        </label>
+        {sp.error === "coords" ? <p className="text-sm text-red-600">That does not look like coordinates. Use the form 13.7563, 100.5018.</p> : sp.error && <p className="text-sm text-red-600">Check the fields. The end must be after the start.</p>}
         {sp.updated && <p className="text-sm text-green-700 dark:text-green-400">Badge field updated.</p>}
         {sp.created && <p className="text-sm text-green-700 dark:text-green-400">Event created.</p>}
         <button className="min-h-12 rounded-full bg-accent px-6 font-medium text-black" type="submit">Create event</button>
@@ -50,6 +54,11 @@ async function AdminView({ searchParams }: { searchParams: PageProps<"/admin/eve
                   <option value="">No field badge</option>
                   {BADGE_FIELDS.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
                 </select>
+                <button type="submit" className="min-h-11 rounded-full border border-neutral-300 px-4 text-sm font-medium dark:border-neutral-700">Save</button>
+              </form>
+              <form action={setEventCoords} className="mt-2 flex gap-2">
+                <input type="hidden" name="id" value={e.id} />
+                <input name="coords" defaultValue={e.venueLat !== null && e.venueLon !== null ? `${e.venueLat}, ${e.venueLon}` : ""} placeholder="Map location: 13.7563, 100.5018" aria-label="Venue map location" className="min-h-11 flex-1 rounded-xl border border-neutral-300 bg-transparent px-3 text-sm dark:border-neutral-700" />
                 <button type="submit" className="min-h-11 rounded-full border border-neutral-300 px-4 text-sm font-medium dark:border-neutral-700">Save</button>
               </form>
               <p className="mt-1 text-xs text-neutral-500">Typed code: <span className="font-mono">{e.checkInCode}</span></p>

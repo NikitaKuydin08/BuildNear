@@ -44,14 +44,27 @@ const WORK: Record<string, string> = {
   hiring: "hiring",
 };
 
+// Free text typed by users (intro message, tags, project text) may contain contact details by accident.
+// The Brain must never receive contacts, so anything that looks like one is removed before a capture.
+export function stripContacts(text: string) {
+  return text
+    .replace(/https?:\/\/\S+/gi, "[link removed]")
+    .replace(/\b(?:t\.me|wa\.me|linkedin\.com|line\.me|discord\.gg)\/\S*/gi, "[contact removed]")
+    .replace(/[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+/g, "[contact removed]")
+    .replace(/(?<![\w])@[A-Za-z0-9_]{3,32}/g, "[contact removed]")
+    .replace(/\+?\d[\d\s().-]{6,}\d/g, "[contact removed]")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 // The note the Brain learns from. The first line carries the name + login so the page can be traced back.
 export function profileNote(u: BrainUser) {
   return [
     `Builder profile: ${u.name} (@${u.githubLogin})`,
     `Works with: ${u.stack.join(", ") || "not specified"}`,
     `Interested in: ${u.topics.join(", ") || "not specified"}`,
-    u.tags.length ? `Tags: ${u.tags.join(", ")}` : null,
-    u.project ? `Proudest project: ${u.project.title}${u.project.description ? ` - ${u.project.description}` : ""}` : null,
+    u.tags.length ? `Tags: ${stripContacts(u.tags.join(", "))}` : null,
+    u.project ? `Proudest project: ${stripContacts(u.project.title)}${u.project.description ? ` - ${stripContacts(u.project.description)}` : ""}` : null,
     `Meeting style: ${MEET[u.meetPreference] ?? u.meetPreference}`,
     u.workStatus ? `Work: ${WORK[u.workStatus] ?? u.workStatus}` : null,
   ]
@@ -86,7 +99,7 @@ export async function recordConnection(a: BrainUser, b: BrainUser, eventTitle: s
     eventTitle ? ` at ${eventTitle}` : ""
   }. Shared ground: ${a.stack.filter((s) => b.stack.map((x) => x.toLowerCase()).includes(s.toLowerCase())).join(", ") || "different stacks"}.${
     // The sender's stated goal, kept short. Only for accepted intros, so both people have already seen it. Contacts are never included.
-    reason?.trim() ? ` Why they wanted to meet: "${reason.replace(/\s+/g, " ").trim().slice(0, 200)}"` : ""
+    reason?.trim() ? ` Why they wanted to meet: "${stripContacts(reason).slice(0, 200)}"` : ""
   }`;
   try {
     await (await client()).captures.capture(

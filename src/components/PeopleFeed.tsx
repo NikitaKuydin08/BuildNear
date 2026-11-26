@@ -1,8 +1,10 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { FeedFilters } from "@/components/FeedFilters";
 import { IntroControl } from "@/components/IntroControl";
 import { PersonCard } from "@/components/PersonCard";
 import { brainEnabled, brainPicks } from "@/lib/brain";
+import { matchesFilters, NO_FILTERS, withFilters, type FeedFilters as Filters } from "@/lib/feed-filters";
 import { scorePair, type MeetPreference, type Person, type WorkStatus } from "@/lib/match";
 import { isHere } from "@/lib/presence";
 import { rerankWithBrain } from "@/lib/rerank";
@@ -34,7 +36,9 @@ function toPerson(u: {
 
 // Everyone / For you / Brain for one event. Shared by the home screen and the event page.
 // Brain details (Brain / Across events tabs, Brain scores) are for admins only: the Brain still works quietly inside "For you" for everyone.
-export function PeopleFeed({ eventId, endsAt, base, meId, tab, admin = false }: { eventId: string; endsAt: Date; base: string; meId: string; tab: Tab; admin?: boolean }) {
+export function PeopleFeed({ eventId, endsAt, base, meId, tab, admin = false, filters = NO_FILTERS }: { eventId: string; endsAt: Date; base: string; meId: string; tab: Tab; admin?: boolean; filters?: Filters }) {
+  // Tab links and "back" links keep the filters in the URL.
+  const fbase = withFilters(base, filters);
   const tabs: { id: Tab; label: string }[] = [
     { id: "everyone", label: "Everyone" },
     { id: "for-you", label: "For you" },
@@ -51,7 +55,7 @@ export function PeopleFeed({ eventId, endsAt, base, meId, tab, admin = false }: 
         {tabs.map((t) => (
           <Link
             key={t.id}
-            href={tabHref(base, t.id)}
+            href={tabHref(fbase, t.id)}
             className={`flex min-h-10 flex-1 items-center justify-center rounded-full text-sm font-medium ${
               tab === t.id ? "bg-white shadow dark:bg-neutral-800" : "text-neutral-500"
             }`}
@@ -60,17 +64,20 @@ export function PeopleFeed({ eventId, endsAt, base, meId, tab, admin = false }: 
           </Link>
         ))}
       </div>
+      {tab !== "across" && <FeedFilters base={base} tab={tab} filters={filters} />}
       <Suspense fallback={<p className="text-neutral-400">Loading people…</p>}>
-        <Feed eventId={eventId} endsAt={endsAt} base={base} meId={meId} tab={tab} admin={admin} />
+        <Feed eventId={eventId} endsAt={endsAt} base={fbase} meId={meId} tab={tab} admin={admin} filters={filters} />
       </Suspense>
     </>
   );
 }
 
-async function Feed({ eventId, endsAt, base, meId, tab, admin }: { eventId: string; endsAt: Date; base: string; meId: string; tab: Tab; admin: boolean }) {
+async function Feed({ eventId, endsAt, base, meId, tab, admin, filters }: { eventId: string; endsAt: Date; base: string; meId: string; tab: Tab; admin: boolean; filters: Filters }) {
   if (tab === "across" && admin) return <AcrossFeed meId={meId} back={tabHref(base, tab)} />;
-  const [me, rows] = await Promise.all([getUser(meId), listAttendees(eventId, meId)]);
-  if (rows.length === 0) return <p className="text-neutral-500">No one else has checked in yet.</p>;
+  const [me, everyone] = await Promise.all([getUser(meId), listAttendees(eventId, meId)]);
+  if (everyone.length === 0) return <p className="text-neutral-500">No one else has checked in yet.</p>;
+  const rows = everyone.filter((r) => matchesFilters(r.user, filters));
+  if (rows.length === 0) return <p className="text-neutral-500">No one matches these filters. Try clearing them.</p>;
   const ids = rows.map((r) => r.user.id);
   const [states, projectsBy] = await Promise.all([introStatesFor(meId, ids), featuredFor(ids)]);
   const back = tabHref(base, tab);

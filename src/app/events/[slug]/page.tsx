@@ -1,14 +1,19 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { and, eq } from "drizzle-orm";
+import { getDb } from "@/db";
+import { badges } from "@/db/schema";
 import { PeopleFeed, type Tab } from "@/components/PeopleFeed";
-import { badgeConfigured, txUrl } from "@/lib/chain";
+import { badgeConfigured, lookupMint, txUrl } from "@/lib/chain";
 import { brainEnabled } from "@/lib/brain";
+import { parseFilters } from "@/lib/feed-filters";
+import { mapEmbedUrl, mapOpenUrl } from "@/lib/venue";
 import { isAdminUser } from "@/lib/organizer";
 import { getAttendance, getBadge, getEventBySlug, getUser } from "@/lib/queries";
 import { requireUserId } from "@/lib/session";
 import { QrScanner } from "@/components/QrScanner";
-import { checkIn, claimBadge, leaveEvent } from "../actions";
+import { checkIn, claimBadge, joinEvent, leaveEvent } from "../actions";
 
 type Props = PageProps<"/events/[slug]">;
 
@@ -19,6 +24,7 @@ const ERRORS: Record<string, string> = {
   minter: "That is the app's own wallet. Paste your personal wallet address from MetaMask.",
   notchecked: "Check in at the venue first, then claim your badge.",
   mint: "The badge couldn't be minted right now. Try again in a minute.",
+  onchain: "This wallet already holds a badge for this event.",
 };
 
 async function EventView({ params, searchParams }: { params: Props["params"]; searchParams: Props["searchParams"] }) {
@@ -35,7 +41,19 @@ async function EventView({ params, searchParams }: { params: Props["params"]; se
   const attendance = await getAttendance(meId, event.id);
   // Checked in and not marked as left since.
   const atVenue = !!attendance?.checkedInAt && !(attendance.leftAt && attendance.leftAt >= attendance.checkedInAt);
-  const [badge, me] = await Promise.all([getBadge(meId, event.id), getUser(meId)]);
+  const [foundBadge, me] = await Promise.all([getBadge(meId, event.id), getUser(meId)]);
+  let badge: typeof foundBadge | null = foundBadge;
+  // A mint that was still pending when the user left: look again now, and fill in the token ID or drop a failed one.
+  if (badge && !badge.tokenId && badgeConfigured()) {
+    const res = await lookupMint(badge.txHash);
+    if (res.state === "confirmed") {
+      await getDb().update(badges).set({ tokenId: res.tokenId }).where(and(eq(badges.userId, meId), eq(badges.eventId, event.id)));
+      badge = { ...badge, tokenId: res.tokenId };
+    } else if (res.state === "reverted") {
+      await getDb().delete(badges).where(and(eq(badges.userId, meId), eq(badges.eventId, event.id)));
+      badge = null;
+    }
+  }
 
   return (
     <main className="flex flex-col gap-4 p-4">
@@ -46,6 +64,34 @@ async function EventView({ params, searchParams }: { params: Props["params"]; se
         <h1 className="mt-1 text-2xl font-semibold">{event.title}</h1>
         <p className="text-sm text-neutral-500">{event.venue}</p>
       </div>
+
+      {event.venueLat !== null && event.venueLon !== null && (
+        <div className="overflow-hidden rounded-2xl border border-neutral-200 dark:border-neutral-800">
+          <iframe
+            title={`Map of ${event.venue}`}
+            src={mapEmbedUrl(event.venueLat, event.venueLon)}
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            className="h-48 w-full border-0"
+          />
+          <a href={mapOpenUrl(event.venueLat, event.venueLon)} target="_blank" rel="noreferrer" className="block px-4 py-2 text-sm underline">
+            Open the map
+          </a>
+        </div>
+      )}
+
+      {!attendance && (
+        <form action={joinEvent} className="flex flex-col gap-2 rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
+          <input type="hidden" name="slug" value={slug} />
+          <p className="text-sm font-medium">Going to this event?</p>
+          <p className="text-xs text-neutral-500">Join the event tab so others can see you are coming. Your contacts stay hidden. You check in at the venue.</p>
+          <button className="min-h-12 rounded-full bg-accent px-6 font-medium text-black" type="submit">Join this event</button>
+        </form>
+      )}
+
+      {attendance && !atVenue && (
+        <p className="rounded-2xl bg-neutral-100 p-3 text-sm dark:bg-neutral-900">You joined this event. Check in when you arrive at the venue.</p>
+      )}
 
       {!atVenue && (
         <div className="flex flex-col gap-3 rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
@@ -87,7 +133,7 @@ async function EventView({ params, searchParams }: { params: Props["params"]; se
         <div className="rounded-2xl border border-neutral-200 p-4 dark:border-neutral-800">
           {badge ? (
             <>
-              <p className="text-sm font-medium">Badge claimed.</p>
+              <p className="text-sm font-medium">{badge.tokenId ? `Badge #${badge.tokenId} claimed.` : "Badge sent. Waiting for the chain to confirm."}</p>
               <a href={txUrl(badge.txHash)} target="_blank" rel="noreferrer" className="text-sm underline">
                 View on BscScan
               </a>
@@ -117,7 +163,7 @@ async function EventView({ params, searchParams }: { params: Props["params"]; se
         </div>
       )}
 
-      {attendance?.checkedInAt && <PeopleFeed eventId={event.id} endsAt={event.endsAt} base={`/events/${slug}`} meId={meId} tab={tab} admin={admin} />}
+      {attendance?.checkedInAt && <PeopleFeed eventId={event.id} endsAt={event.endsAt} base={`/events/${slug}`} meId={meId} tab={tab} admin={admin} filters={parseFilters(sp)} />}
     </main>
   );
 }

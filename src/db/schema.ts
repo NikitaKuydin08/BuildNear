@@ -42,6 +42,9 @@ export const events = pgTable("events", {
   // Shown at the venue; entering it proves presence.
   checkInCode: text("check_in_code").notNull(),
   lumaUrl: text("luma_url"),
+  // Venue-level location only (a public place, not a person). Optional; shows a small map on the event page.
+  venueLat: doublePrecision("venue_lat"),
+  venueLon: doublePrecision("venue_lon"),
   // Which badge field this event counts toward (key from BADGE_FIELDS). Null = no field badge.
   field: text("field"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -86,6 +89,8 @@ export const badges = pgTable(
     eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
     wallet: text("wallet").notNull(),
     txHash: text("tx_hash").notNull(),
+    // Filled once the mint is confirmed on chain (the Transfer event carries it). Null while the transaction is still pending.
+    tokenId: text("token_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.eventId] })],
@@ -99,6 +104,8 @@ export const projects = pgTable("projects", {
   description: text("description").notNull().default(""),
   stack: text("stack").array().notNull().default(sql`'{}'::text[]`),
   url: text("url"),
+  // 'public' = backed by a public link (e.g. a public GitHub repo). 'private' = written by the user or a private repo: no link is shown.
+  visibility: text("visibility").notNull().default("public"),
   featured: boolean("featured").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -121,5 +128,15 @@ export const rankingLogs = pgTable("ranking_logs", {
   brainSimilarity: doublePrecision("brain_similarity"),
   brainMs: integer("brain_ms").notNull(),
   reason: text("reason").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Basic messaging: a short text thread between two people, only after an intro request was accepted.
+// Messages are never sent to the Living Brain. They are deleted with the intro request or either account.
+export const messages = pgTable("messages", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  introId: uuid("intro_id").notNull().references(() => introRequests.id, { onDelete: "cascade" }),
+  fromUserId: uuid("from_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  body: text("body").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

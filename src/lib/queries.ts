@@ -1,8 +1,8 @@
-import { and, asc, desc, eq, inArray, isNotNull, ne, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, lt, ne, or, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { attendances, badges, events, introRequests, projects, users } from "@/db/schema";
 import { contactLinks } from "@/lib/contacts";
-import { distanceKm, isFresh, NEARBY_KM } from "@/lib/presence";
+import { distanceKm, isFresh, LOCATION_TTL_MS, NEARBY_KM } from "@/lib/presence";
 
 export async function getEventBySlug(slug: string) {
   const [row] = await getDb().select().from(events).where(eq(events.slug, slug)).limit(1);
@@ -162,7 +162,7 @@ export async function listProjects(userId: string) {
   return getDb().select().from(projects).where(eq(projects.userId, userId)).orderBy(desc(projects.featured), asc(projects.createdAt));
 }
 
-export type FeaturedProject = { title: string; description: string; url: string | null };
+export type FeaturedProject = { title: string; description: string; url: string | null; visibility: string };
 
 // The "proudest project" for a set of people, shown on their cards.
 export async function featuredFor(userIds: string[]) {
@@ -172,7 +172,7 @@ export async function featuredFor(userIds: string[]) {
     .select()
     .from(projects)
     .where(and(inArray(projects.userId, userIds), eq(projects.featured, true)));
-  for (const r of rows) out.set(r.userId, { title: r.title, description: r.description, url: r.url });
+  for (const r of rows) out.set(r.userId, { title: r.title, description: r.description, url: r.url, visibility: r.visibility });
   return out;
 }
 
@@ -185,8 +185,19 @@ export async function getBrainUser(userId: string) {
 }
 
 // ---- Nearby ----
+// Positions older than the time limit are erased from the database, not just ignored ("auto-expiring").
+// Runs whenever someone loads a screen that uses locations, so there is no scheduler to maintain.
+export async function purgeExpiredLocations() {
+  const cutoff = new Date(Date.now() - LOCATION_TTL_MS);
+  await getDb()
+    .update(users)
+    .set({ locationLat: null, locationLon: null, locationAt: null })
+    .where(and(isNotNull(users.locationAt), lt(users.locationAt, cutoff)));
+}
+
 // Opted-in people with a fresh position within NEARBY_KM of me, closest first. Coordinates never leave the server.
 export async function nearbyPeople(me: { id: string; locationLat: number | null; locationLon: number | null }) {
+  await purgeExpiredLocations();
   if (me.locationLat === null || me.locationLon === null) return [];
   const rows = await getDb()
     .select()

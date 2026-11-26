@@ -2,9 +2,10 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { AcrossFeed, PeopleFeed, type Tab } from "@/components/PeopleFeed";
 import { brainEnabled } from "@/lib/brain";
+import { parseFilters } from "@/lib/feed-filters";
 import { isHere } from "@/lib/presence";
 import { isAdminUser } from "@/lib/organizer";
-import { activeEventsFor } from "@/lib/queries";
+import { activeEventsFor, purgeExpiredLocations } from "@/lib/queries";
 import { requireUserId } from "@/lib/session";
 
 // Home: the people at the event I am checked in to. Events are the second tab.
@@ -12,6 +13,7 @@ async function HomeView({ searchParams }: { searchParams: PageProps<"/people">["
   const sp = await searchParams;
   const meId = await requireUserId("/people");
   const admin = await isAdminUser(meId);
+  await purgeExpiredLocations();
   const tab: Tab = sp.tab === "for-you" ? "for-you" : admin && sp.tab === "brain" && brainEnabled() ? "brain" : admin && sp.tab === "across" && brainEnabled() ? "across" : "everyone";
 
   const past = await activeEventsFor(meId);
@@ -69,7 +71,7 @@ async function HomeView({ searchParams }: { searchParams: PageProps<"/people">["
           ))}
         </div>
       )}
-      <PeopleFeed eventId={event.id} endsAt={event.endsAt} base={base} meId={meId} tab={tab} admin={admin} />
+      <PeopleFeed eventId={event.id} endsAt={event.endsAt} base={base} meId={meId} tab={tab} admin={admin} filters={parseFilters(sp)} />
     </>
   );
 }

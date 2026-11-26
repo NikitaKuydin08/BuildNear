@@ -1,7 +1,7 @@
 import { eq, or } from "drizzle-orm";
 import { auth } from "@/auth";
 import { getDb } from "@/db";
-import { attendances, badges, events, introRequests, projects, userPhotos, users } from "@/db/schema";
+import { attendances, badges, events, introRequests, messages, projects, rankingLogs, userPhotos, users } from "@/db/schema";
 
 // "Download my data": everything we store about the signed-in user, as JSON.
 export async function GET() {
@@ -14,13 +14,16 @@ export async function GET() {
   if (!user) return new Response("Not found", { status: 404 });
 
   const [photo] = await db.select().from(userPhotos).where(eq(userPhotos.userId, id)).limit(1);
-  const [mine, att, bad, intros] = await Promise.all([
+  const [mine, att, bad, intros, sentMessages, rankings] = await Promise.all([
     db.select().from(projects).where(eq(projects.userId, id)),
     db.select({ event: events.title, joinedAt: attendances.joinedAt, checkedInAt: attendances.checkedInAt })
       .from(attendances).innerJoin(events, eq(attendances.eventId, events.id)).where(eq(attendances.userId, id)),
     db.select().from(badges).where(eq(badges.userId, id)),
     db.select({ from: introRequests.fromUserId, to: introRequests.toUserId, message: introRequests.message, status: introRequests.status, createdAt: introRequests.createdAt })
       .from(introRequests).where(or(eq(introRequests.fromUserId, id), eq(introRequests.toUserId, id))),
+    db.select({ body: messages.body, createdAt: messages.createdAt }).from(messages).where(eq(messages.fromUserId, id)),
+    db.select({ plainRank: rankingLogs.plainRank, finalRank: rankingLogs.finalRank, brainMs: rankingLogs.brainMs, reason: rankingLogs.reason, createdAt: rankingLogs.createdAt })
+      .from(rankingLogs).where(eq(rankingLogs.userId, id)),
   ]);
 
   const body = {
@@ -30,6 +33,8 @@ export async function GET() {
     projects: mine,
     eventAttendance: att,
     badges: bad,
+    messagesSent: sentMessages,
+    feedRankingsShownToYou: rankings,
     introRequests: intros.map((r) => ({ direction: r.from === id ? "sent" : "received", message: r.message, status: r.status, createdAt: r.createdAt })),
   };
   return new Response(JSON.stringify(body, null, 2), {

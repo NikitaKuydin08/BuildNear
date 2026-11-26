@@ -63,6 +63,8 @@ export async function saveProfile(formData: FormData) {
       description: String(formData.get(`${prefix}desc`) ?? "").trim().slice(0, 140),
       stack: parseList(formData.get(`${prefix}stack`), 8),
       url: /^https?:\/\//i.test(url) ? url.slice(0, 200) : null,
+      // A project with a public link is public; one written by hand without a link stays private.
+      visibility: /^https?:\/\//i.test(url) ? "public" : "private",
       featured,
     });
   };

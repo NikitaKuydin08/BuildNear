@@ -23,7 +23,7 @@ async function EventList() {
 
   return (
     <ul className="flex flex-col gap-3">
-      {rows.map(({ event, checkedInAt }) => (
+      {rows.map(({ event, checkedInAt, joinedAt }) => (
         <li key={event.id}>
           <Link
             href={`/events/${event.slug}`}
@@ -33,7 +33,7 @@ async function EventList() {
             <p className="text-sm text-neutral-500">{event.venue}</p>
             <p className="mt-1 text-xs text-neutral-500">{fmt.format(event.startsAt)} (Bangkok time)</p>
             <p className="mt-2 text-xs font-medium">
-              {checkedInAt ? "You're here" : "Scan the QR at the venue to check in"}
+              {checkedInAt ? "You're here" : joinedAt ? "Joined · check in at the venue" : "Open to join"}
             </p>
           </Link>
         </li>

@@ -1,13 +1,13 @@
 import { after } from "next/server";
 import { getDb } from "@/db";
 import { rankingLogs } from "@/db/schema";
+import { blendRanking } from "@/lib/blend";
 import { brainEnabled, brainPicks, type BrainUser } from "@/lib/brain";
 
 type Item = { user: { id: string; name: string; githubLogin: string }; match: { score: number } };
 export type Reranked<T> = T & { brain?: number; note?: string };
 
-// Takes the plain ranking (best first) and lets the Living Brain re-rank the top few.
-// Final score = 60% plain score + 40% Brain similarity (people the Brain doesn't know yet keep their plain score).
+// Takes the plain ranking (best first) and lets the Living Brain re-rank the top few (formula: src/lib/blend.ts).
 // If the Brain is off or unreachable, the plain ranking is returned untouched, so the page never breaks.
 // With `ctx`, every re-rank is logged (plain rank, final rank, Brain latency) for the admin evaluation panel.
 export async function rerankWithBrain<T extends Item>(
@@ -23,40 +23,29 @@ export async function rerankWithBrain<T extends Item>(
   const brainMs = Date.now() - started;
   if (!picks || picks.size === 0) return { list: plain, used: false };
 
-  const scored = head
-    .map((r, i) => {
-      const sim = picks.get(r.user.id)?.similarity;
-      return { r, i, sim, final: sim === undefined ? r.match.score : 0.6 * r.match.score + 0.4 * sim * 100 };
-    })
-    .sort((a, b) => b.final - a.final || a.i - b.i);
-
-  const list: Reranked<T>[] = scored.map((s, n) => ({
-    ...s.r,
-    brain: s.sim,
-    note: s.i === n ? undefined : s.i > n ? `Brain moved them up ${s.i - n}` : `Brain moved them down ${n - s.i}`,
-  }));
+  const { list, rows } = blendRanking(plain, picks, top);
 
   if (ctx) {
-    const rows = scored.map((s, n) => ({
+    const values = rows.map((r) => ({
       userId: me.id,
-      candidateId: s.r.user.id,
+      candidateId: r.candidateId,
       eventId: ctx.eventId,
-      plainRank: s.i + 1,
-      finalRank: n + 1,
-      brainSimilarity: s.sim ?? null,
+      plainRank: r.plainRank,
+      finalRank: r.finalRank,
+      brainSimilarity: r.similarity,
       brainMs,
-      reason: s.sim === undefined ? "Brain does not know this person yet" : list[n].note ?? "Brain kept the plain position",
+      reason: r.reason,
     }));
     // After the response is sent, and never allowed to break the feed.
     try {
       after(async () => {
         try {
-          await getDb().insert(rankingLogs).values(rows);
+          await getDb().insert(rankingLogs).values(values);
         } catch (e) {
           console.error("ranking log failed:", e instanceof Error ? e.message : e);
         }
       });
     } catch {}
   }
-  return { list: [...list, ...plain.slice(top)], used: true };
+  return { list: list as Reranked<T>[], used: true };
 }

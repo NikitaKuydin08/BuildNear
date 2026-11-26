@@ -20,7 +20,7 @@ export type PersonCardProps = {
   action?: "meet" | "chat";
   brainMatch?: number;
   rankNote?: string;
-  project?: { title: string; description: string; url: string | null } | null;
+  project?: { title: string; description: string; url: string | null; visibility?: string } | null;
   distance?: string;
   // Small line under the topics, e.g. which events you share.
   note?: string;
@@ -79,7 +79,7 @@ export function PersonCard(p: PersonCardProps) {
 
       {p.project && (
         <div className="mt-3 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800">
-          <p className="text-xs uppercase tracking-wide text-neutral-500">Proudest project</p>
+          <p className="text-xs uppercase tracking-wide text-neutral-500">Proudest project{p.project.visibility === "private" ? " · private" : ""}</p>
           <p className="text-sm font-medium">{p.project.title}</p>
           {p.project.description && <p className="text-sm text-neutral-500">{p.project.description}</p>}
           {p.project.url && (

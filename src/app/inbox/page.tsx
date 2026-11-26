@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { listInbox } from "@/lib/queries";
 import { requireUserId } from "@/lib/session";
 import { respondIntro } from "./actions";
@@ -74,6 +75,9 @@ async function InboxView() {
           {connected.map((r) => (
             <Card key={r.id} row={r}>
               <Reveal contact={r.contact} />
+              <Link href={`/inbox/${r.id}`} className="mt-2 flex min-h-11 items-center justify-center rounded-full bg-accent px-4 text-sm font-medium text-black">
+                Message
+              </Link>
             </Card>
           ))}
         </ul>

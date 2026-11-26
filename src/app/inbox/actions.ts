@@ -12,6 +12,19 @@ import { requireUserId } from "@/lib/session";
 
 const MAX_MESSAGE = 200;
 
+// Only accepted connections are remembered by the Brain (declines never). Runs after the response is sent.
+function rememberConnection(req: { id: string; fromUserId: string; toUserId: string; eventId: string | null; message: string }) {
+  after(async () => {
+    const [a, b] = await Promise.all([getUser(req.fromUserId), getUser(req.toUserId)]);
+    let title: string | null = null;
+    if (req.eventId) {
+      const [ev] = await getDb().select().from(events).where(eq(events.id, req.eventId)).limit(1);
+      title = ev?.title ?? null;
+    }
+    if (a && b) await recordConnection(a, b, title, req.id, req.message);
+  });
+}
+
 // Only same-site relative paths, so a forged "back" field can't redirect elsewhere.
 function safeBack(v: unknown) {
   const s = String(v ?? "");
@@ -44,6 +57,8 @@ export async function sendIntro(formData: FormData) {
         .update(introRequests)
         .set({ status: "accepted", respondedAt: new Date() })
         .where(eq(introRequests.id, reverse.id));
+      // A mutual request is an accepted intro too, so the Brain must learn about it.
+      rememberConnection(reverse);
     }
   } else {
     await db.insert(introRequests).values({ fromUserId: me, toUserId: to, eventId, message }).onConflictDoNothing();
@@ -65,17 +80,7 @@ export async function respondIntro(formData: FormData) {
   await getDb().update(introRequests).set({ status: decision, respondedAt: new Date() }).where(eq(introRequests.id, id));
 
   // Only accepted connections are remembered by the Brain. Declines are never stored.
-  if (decision === "accepted") {
-    after(async () => {
-      const [a, b] = await Promise.all([getUser(req.fromUserId), getUser(req.toUserId)]);
-      let title: string | null = null;
-      if (req.eventId) {
-        const [ev] = await getDb().select().from(events).where(eq(events.id, req.eventId)).limit(1);
-        title = ev?.title ?? null;
-      }
-      if (a && b) await recordConnection(a, b, title, req.id, req.message);
-    });
-  }
+  if (decision === "accepted") rememberConnection(req);
   revalidatePath("/inbox");
   redirect("/inbox");
 }
